@@ -1,0 +1,6 @@
+,tmdb_id,popularity,vote_average,vote_count,adult
+tmdb_id,1.0,0.1984,-0.2877,-0.6945,
+popularity,0.1984,1.0,0.0279,-0.0762,
+vote_average,-0.2877,0.0279,1.0,0.4349,
+vote_count,-0.6945,-0.0762,0.4349,1.0,
+adult,,,,,

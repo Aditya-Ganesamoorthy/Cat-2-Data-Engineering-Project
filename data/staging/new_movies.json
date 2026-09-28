@@ -1,0 +1,209 @@
+[
+  {
+    "adult": false,
+    "backdrop_path": "/pWvYluV8GNWQJRC4IdrZuJPLwzO.jpg",
+    "genre_ids": [
+      18,
+      53,
+      80
+    ],
+    "id": 1487864,
+    "title": "Nando Between Two Worlds - A Sintonia Film",
+    "original_language": "pt",
+    "original_title": "Nando Entre Dois Mundos: Um Filme Sintonia",
+    "overview": "Caught between family life and his obligations to the criminal underworld, Nando faces an impossible choice about where his true loyalties lie.",
+    "popularity": 25.0432,
+    "poster_path": "/lP558W6RgDYaQvs9GKNGPUhVOLU.jpg",
+    "release_date": "2026-08-12",
+    "softcore": false,
+    "video": false,
+    "vote_average": 3.667,
+    "vote_count": 3
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/fKPgObonYgPgCdu88yjV7Hpn7Dp.jpg",
+    "genre_ids": [
+      28,
+      80,
+      53
+    ],
+    "id": 273481,
+    "title": "Sicario",
+    "original_language": "en",
+    "original_title": "Sicario",
+    "overview": "An idealistic FBI agent is enlisted by a government task force to aid in the escalating war against drugs at the border area between the U.S. and Mexico.",
+    "popularity": 16.737,
+    "poster_path": "/lz8vNyXeidqqOdJW9ZjnDAMb5Vr.jpg",
+    "release_date": "2015-09-17",
+    "softcore": false,
+    "video": false,
+    "vote_average": 7.424,
+    "vote_count": 9738
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/gl0jzn4BupSbL2qMVeqrjKkF9Js.jpg",
+    "genre_ids": [
+      12,
+      14,
+      16
+    ],
+    "id": 128,
+    "title": "Princess Mononoke",
+    "original_language": "ja",
+    "original_title": "もののけ姫",
+    "overview": "Ashitaka, a prince of the disappearing Emishi people, is cursed by a demonized boar god and must journey to the west to find a cure. Along the way, he encounters San, a young human woman fighting to protect the forest, and Lady Eboshi, who is trying to destroy it. Ashitaka must find a way to bring balance to this conflict.",
+    "popularity": 19.1752,
+    "poster_path": "/cMYCDADoLKLbB83g4WnJegaZimC.jpg",
+    "release_date": "1997-07-12",
+    "softcore": false,
+    "video": false,
+    "vote_average": 8.32,
+    "vote_count": 9166
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/7JhsJxNmdW0y4IyNrHy10cECrAz.jpg",
+    "genre_ids": [
+      35
+    ],
+    "id": 109418,
+    "title": "Grown Ups 2",
+    "original_language": "en",
+    "original_title": "Grown Ups 2",
+    "overview": "Lenny has relocated his family back to the small town where he and his friends grew up. This time around, the grown ups are the ones learning lessons from their kids on a day notoriously full of surprises—the last day of school.",
+    "popularity": 19.2276,
+    "poster_path": "/hT6ijOtjtYrnyDhN7VA2QWyGFAm.jpg",
+    "release_date": "2013-07-11",
+    "softcore": false,
+    "video": false,
+    "vote_average": 6.187,
+    "vote_count": 4776
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/wvlIoof1FnKPLv9jAYanuP31V0C.jpg",
+    "genre_ids": [
+      878,
+      28,
+      53
+    ],
+    "id": 87101,
+    "title": "Terminator Genisys",
+    "original_language": "en",
+    "original_title": "Terminator Genisys",
+    "overview": "The year is 2029. John Connor, leader of the resistance continues the war against the machines. At the Los Angeles offensive, John's fears of the unknown future begin to emerge when TECOM spies reveal a new plot by SkyNet that will attack him from both fronts; past and future, and will ultimately change warfare forever.",
+    "popularity": 19.0057,
+    "poster_path": "/oZRVDpNtmHk8M1VYy1aeOWUXgbC.jpg",
+    "release_date": "2015-06-23",
+    "softcore": false,
+    "video": false,
+    "vote_average": 5.959,
+    "vote_count": 9095
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/gddUsvfyySrM5k8B8wwJy2VRlBx.jpg",
+    "genre_ids": [
+      80,
+      53,
+      37
+    ],
+    "id": 6977,
+    "title": "No Country for Old Men",
+    "original_language": "en",
+    "original_title": "No Country for Old Men",
+    "overview": "Llewelyn Moss stumbles upon dead bodies, $2 million and a hoard of heroin in a Texas desert, but methodical killer Anton Chigurh comes looking for it, with local sheriff Ed Tom Bell hot on his trail. The roles of prey and predator blur as the violent pursuit of money and justice collide.",
+    "popularity": 19.3858,
+    "poster_path": "/6d5XOczc226jECq0LIX0siKtgHR.jpg",
+    "release_date": "2007-11-09",
+    "softcore": false,
+    "video": false,
+    "vote_average": 7.948,
+    "vote_count": 13596
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/nHRUtBwFNnNN70vcQ7lAsjc2T6S.jpg",
+    "genre_ids": [
+      27,
+      18,
+      878
+    ],
+    "id": 447332,
+    "title": "A Quiet Place",
+    "original_language": "en",
+    "original_title": "A Quiet Place",
+    "overview": "A family is forced to live in silence while hiding from creatures that hunt by sound.",
+    "popularity": 20.8203,
+    "poster_path": "/nAU74GmpUk7t5iklEp3bufwDq4n.jpg",
+    "release_date": "2018-04-03",
+    "softcore": false,
+    "video": false,
+    "vote_average": 7.395,
+    "vote_count": 15570
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/hy0Hx9fMPk2fmw26Li60z1S2giU.jpg",
+    "genre_ids": [
+      18,
+      80,
+      53
+    ],
+    "id": 629,
+    "title": "The Usual Suspects",
+    "original_language": "en",
+    "original_title": "The Usual Suspects",
+    "overview": "Held in an L.A. interrogation room, Verbal Kint attempts to convince the feds that a mythic crime lord, Keyser Soze, not only exists, but was also responsible for drawing him and his four partners into a multi-million dollar heist that ended with an explosion in San Pedro harbor – leaving few survivors. Verbal lures his interrogators with an incredible story of the crime lord's almost supernatural prowess.",
+    "popularity": 21.1306,
+    "poster_path": "/99X2SgyFunJFXGAYnDv3sb9pnUD.jpg",
+    "release_date": "1995-07-19",
+    "softcore": false,
+    "video": false,
+    "vote_average": 8.165,
+    "vote_count": 11603
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/tJvRdhlkonjBLBUpTqp0RPPujxJ.jpg",
+    "genre_ids": [
+      27,
+      53
+    ],
+    "id": 49018,
+    "title": "Insidious",
+    "original_language": "en",
+    "original_title": "Insidious",
+    "overview": "A family discovers that dark spirits have invaded their home after their son inexplicably falls into an endless sleep. When they reach out to a professional for help, they learn things are a lot more personal than they thought.",
+    "popularity": 20.0346,
+    "poster_path": "/1egpmVXuXed58TH2UOnX1nATTrf.jpg",
+    "release_date": "2011-03-31",
+    "softcore": false,
+    "video": false,
+    "vote_average": 6.947,
+    "vote_count": 7455
+  },
+  {
+    "adult": false,
+    "backdrop_path": "/ocOWbTzHcJVTw9Tz173KPeskDOP.jpg",
+    "genre_ids": [
+      10751,
+      14,
+      12
+    ],
+    "id": 12155,
+    "title": "Alice in Wonderland",
+    "original_language": "en",
+    "original_title": "Alice in Wonderland",
+    "overview": "Alice, now 19 years old, returns to the whimsical world she first entered as a child and embarks on a journey to discover her true destiny.",
+    "popularity": 20.0502,
+    "poster_path": "/o0kre9wRCZz3jjSjaru7QU0UtFz.jpg",
+    "release_date": "2010-03-03",
+    "softcore": false,
+    "video": false,
+    "vote_average": 6.644,
+    "vote_count": 14969
+  }
+]
