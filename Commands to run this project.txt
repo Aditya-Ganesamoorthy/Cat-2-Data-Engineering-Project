@@ -13,3 +13,27 @@ For Week-1:
 > docker exec -it de-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic movie_pipeline --from-beginning
 
 For Week-2:
+> # 1. Initialize and inspect Lakehouse Catalog & Tables
+> python pipeline/lakehouse_catalog.py --init
+> python pipeline/lakehouse_catalog.py --list-tables
+> python pipeline/lakehouse_catalog.py --describe movie_lakehouse.staging_events
+>
+> # 2. Run Spark Streaming Sink to Lakehouse (with Partitioning & WAL commits)
+> python pipeline/spark_stream_processor.py --max-batches 2
+>
+> # 3. Display Lakehouse Output & Query Tables (Clean Events & Quarantined DLQ)
+> python pipeline/show_lakehouse.py
+> python pipeline/show_lakehouse.py --table staging --limit 10
+> python pipeline/show_lakehouse.py --table quarantine --limit 10
+> python pipeline/lakehouse_catalog.py --show
+>
+> # 4. Inspect Lakehouse Physical Partitions & ACID WAL Commit History
+> python pipeline/lakehouse_catalog.py --partitions
+> python pipeline/lakehouse_catalog.py --history movie_lakehouse.staging_events
+> python pipeline/lakehouse_catalog.py --export-trino
+>
+> # 5. Run Automated End-to-End Week-2 Lakehouse Pipeline Verification Suite
+> python pipeline/test_lakehouse_pipeline.py
+>
+> # 6. Trigger Week-2 Airflow Lakehouse Maintenance DAG (in Airflow Web UI: http://localhost:8080)
+> # DAG ID: lakehouse_catalog_maintenance

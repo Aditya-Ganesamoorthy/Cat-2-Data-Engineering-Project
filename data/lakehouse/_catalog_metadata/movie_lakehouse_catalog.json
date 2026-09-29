@@ -1,0 +1,338 @@
+{
+  "catalog_name": "movie_lakehouse",
+  "catalog_type": "delta",
+  "version": "2.0.0",
+  "created_at": "2026-09-29T09:20:22.515819+00:00",
+  "updated_at": "2026-09-29T10:10:59.214925+00:00",
+  "endpoints": {
+    "hive_metastore": "thrift://localhost:9083",
+    "nessie": "http://localhost:19120/api/v1",
+    "local_warehouse": "C:\\Users\\adity\\Documents\\Semester 9\\Lab\\Data Engineering Lab\\Cat-2\\Cat-2 DE Project\\data\\warehouse"
+  },
+  "tables": {
+    "staging_events": {
+      "table_name": "staging_events",
+      "full_name": "movie_lakehouse.staging_events",
+      "location": "/opt/airflow/project/data/lakehouse/staging_events",
+      "format": "delta",
+      "partition_columns": [
+        "event_date"
+      ],
+      "schema": {
+        "fields": [
+          {
+            "name": "event_id",
+            "type": "string",
+            "nullable": false,
+            "metadata": {
+              "comment": "Unique event UUID"
+            }
+          },
+          {
+            "name": "event_type",
+            "type": "string",
+            "nullable": false,
+            "metadata": {
+              "comment": "Stream event category"
+            }
+          },
+          {
+            "name": "event_time",
+            "type": "timestamp",
+            "nullable": false,
+            "metadata": {
+              "comment": "Event generation timestamp"
+            }
+          },
+          {
+            "name": "event_date",
+            "type": "date",
+            "nullable": false,
+            "metadata": {
+              "comment": "Partition key (YYYY-MM-DD)"
+            }
+          },
+          {
+            "name": "event_hour",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {
+              "comment": "Event hour (0-23)"
+            }
+          },
+          {
+            "name": "user_id",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "User identifier"
+            }
+          },
+          {
+            "name": "session_id",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "User session UUID"
+            }
+          },
+          {
+            "name": "device",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Client device"
+            }
+          },
+          {
+            "name": "country",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Country code (ISO 3166-1)"
+            }
+          },
+          {
+            "name": "tmdb_id",
+            "type": "long",
+            "nullable": false,
+            "metadata": {
+              "comment": "TMDB movie reference ID"
+            }
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Movie title"
+            }
+          },
+          {
+            "name": "genres",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Comma-separated genres"
+            }
+          },
+          {
+            "name": "popularity",
+            "type": "double",
+            "nullable": true,
+            "metadata": {
+              "comment": "Popularity metric"
+            }
+          },
+          {
+            "name": "vote_average",
+            "type": "double",
+            "nullable": true,
+            "metadata": {
+              "comment": "Audience vote average (0-10)"
+            }
+          },
+          {
+            "name": "vote_count",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {
+              "comment": "Number of ratings"
+            }
+          },
+          {
+            "name": "release_date",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Theatrical release date"
+            }
+          },
+          {
+            "name": "view_duration_seconds",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {
+              "comment": "Watch duration"
+            }
+          },
+          {
+            "name": "user_rating",
+            "type": "double",
+            "nullable": true,
+            "metadata": {
+              "comment": "Individual rating score"
+            }
+          },
+          {
+            "name": "rating_bracket",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Masterpiece/High/Medium/Low"
+            }
+          },
+          {
+            "name": "engagement_score",
+            "type": "double",
+            "nullable": true,
+            "metadata": {
+              "comment": "Duration * Rating score"
+            }
+          },
+          {
+            "name": "validation_status",
+            "type": "string",
+            "nullable": false,
+            "metadata": {
+              "comment": "Quality status: VALID"
+            }
+          },
+          {
+            "name": "rejection_reason",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Validation rule verdict"
+            }
+          },
+          {
+            "name": "corrupt_record_raw",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Raw corrupt payload (if any)"
+            }
+          },
+          {
+            "name": "kafka_partition",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {
+              "comment": "Kafka source partition"
+            }
+          },
+          {
+            "name": "kafka_offset",
+            "type": "long",
+            "nullable": true,
+            "metadata": {
+              "comment": "Kafka source offset"
+            }
+          },
+          {
+            "name": "kafka_timestamp",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {
+              "comment": "Kafka broker timestamp"
+            }
+          }
+        ]
+      },
+      "description": "Clean, validated real-time movie streaming events partitioned by event_date with WAL",
+      "wal_directory": "/opt/airflow/project/data/lakehouse/staging_events/_delta_log",
+      "registered_at": "2026-09-29T10:10:59.137907+00:00",
+      "properties": {
+        "delta.appendOnly": "true",
+        "delta.autoOptimize.optimizeWrite": "true",
+        "delta.autoOptimize.autoCompact": "true",
+        "write.format.default": "parquet"
+      }
+    },
+    "quarantine_events": {
+      "table_name": "quarantine_events",
+      "full_name": "movie_lakehouse.quarantine_events",
+      "location": "/opt/airflow/project/data/lakehouse/quarantine",
+      "format": "delta",
+      "partition_columns": [
+        "rejection_reason"
+      ],
+      "schema": {
+        "fields": [
+          {
+            "name": "event_id",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Event ID if parsed"
+            }
+          },
+          {
+            "name": "tmdb_id",
+            "type": "long",
+            "nullable": true,
+            "metadata": {
+              "comment": "Movie ID if present"
+            }
+          },
+          {
+            "name": "validation_status",
+            "type": "string",
+            "nullable": false,
+            "metadata": {
+              "comment": "Status: QUARANTINE"
+            }
+          },
+          {
+            "name": "rejection_reason",
+            "type": "string",
+            "nullable": false,
+            "metadata": {
+              "comment": "Violation rule code"
+            }
+          },
+          {
+            "name": "corrupt_record_raw",
+            "type": "string",
+            "nullable": true,
+            "metadata": {
+              "comment": "Original unparseable JSON"
+            }
+          },
+          {
+            "name": "event_date",
+            "type": "date",
+            "nullable": true,
+            "metadata": {
+              "comment": "Partition date"
+            }
+          },
+          {
+            "name": "kafka_partition",
+            "type": "integer",
+            "nullable": true,
+            "metadata": {
+              "comment": "Source partition"
+            }
+          },
+          {
+            "name": "kafka_offset",
+            "type": "long",
+            "nullable": true,
+            "metadata": {
+              "comment": "Source offset"
+            }
+          },
+          {
+            "name": "kafka_timestamp",
+            "type": "timestamp",
+            "nullable": true,
+            "metadata": {
+              "comment": "Source timestamp"
+            }
+          }
+        ]
+      },
+      "description": "Quarantine Dead-Letter Queue (DLQ) for corrupt/invalid payloads with schema enforcement WAL",
+      "wal_directory": "/opt/airflow/project/data/lakehouse/quarantine/_delta_log",
+      "registered_at": "2026-09-29T10:10:59.214865+00:00",
+      "properties": {
+        "delta.appendOnly": "true",
+        "delta.autoOptimize.optimizeWrite": "true",
+        "delta.autoOptimize.autoCompact": "true",
+        "write.format.default": "parquet"
+      }
+    }
+  }
+}

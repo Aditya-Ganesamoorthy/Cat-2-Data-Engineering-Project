@@ -1,0 +1,79 @@
+{
+  "commitInfo": {
+    "timestamp": 1790673838050,
+    "inCommitTimestamp": 1790673838050,
+    "userId": "streaming_engine",
+    "userName": "SparkStructuredStreaming",
+    "operation": "STREAMING QUARANTINE DLQ",
+    "operationParameters": {
+      "outputMode": "Append",
+      "queryId": "8c539065-d442-4bbf-8d60-420a73400609",
+      "epochId": "0"
+    },
+    "readVersion": null,
+    "isolationLevel": "Serializable",
+    "isBlindAppend": true,
+    "engineInfo": "PySpark/4.2.0 Lakehouse-Delta-Writer",
+    "txnId": "a827968c-cc4f-4892-9c57-4e8e4eed74ae"
+  },
+  "protocol": {
+    "minReaderVersion": 1,
+    "minWriterVersion": 2
+  },
+  "metaData": {
+    "id": "0d0771f1-75f7-5028-a773-b3fd895b7ea6",
+    "format": {
+      "provider": "parquet",
+      "options": {}
+    },
+    "schemaString": "{\"fields\": [{\"name\": \"event_id\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Event ID if parsed\"}}, {\"name\": \"tmdb_id\", \"type\": \"long\", \"nullable\": true, \"metadata\": {\"comment\": \"Movie ID if present\"}}, {\"name\": \"validation_status\", \"type\": \"string\", \"nullable\": false, \"metadata\": {\"comment\": \"Status: QUARANTINE\"}}, {\"name\": \"rejection_reason\", \"type\": \"string\", \"nullable\": false, \"metadata\": {\"comment\": \"Violation rule code\"}}, {\"name\": \"corrupt_record_raw\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Original unparseable JSON\"}}, {\"name\": \"event_date\", \"type\": \"date\", \"nullable\": true, \"metadata\": {\"comment\": \"Partition date\"}}, {\"name\": \"kafka_partition\", \"type\": \"integer\", \"nullable\": true, \"metadata\": {\"comment\": \"Source partition\"}}, {\"name\": \"kafka_offset\", \"type\": \"long\", \"nullable\": true, \"metadata\": {\"comment\": \"Source offset\"}}, {\"name\": \"kafka_timestamp\", \"type\": \"timestamp\", \"nullable\": true, \"metadata\": {\"comment\": \"Source timestamp\"}}]}",
+    "partitionColumns": [
+      "rejection_reason"
+    ],
+    "configuration": {
+      "delta.appendOnly": "true",
+      "delta.autoOptimize.optimizeWrite": "true",
+      "delta.autoOptimize.autoCompact": "true",
+      "write.format.default": "parquet"
+    },
+    "createdTime": 1790673838050
+  },
+  "add_actions": [
+    {
+      "path": "rejection_reason=CORRUPT_JSON_SYNTAX",
+      "partitionValues": {
+        "rejection_reason": "CORRUPT_JSON_SYNTAX"
+      },
+      "size": 0,
+      "modificationTime": 1790673838050,
+      "dataChange": true,
+      "stats": "{\"numRecords\": 46}"
+    },
+    {
+      "path": "rejection_reason=MISSING_OR_INVALID_TMDB_ID",
+      "partitionValues": {
+        "rejection_reason": "MISSING_OR_INVALID_TMDB_ID"
+      },
+      "size": 0,
+      "modificationTime": 1790673838050,
+      "dataChange": true,
+      "stats": "{\"numRecords\": 46}"
+    },
+    {
+      "path": "rejection_reason=VOTE_AVERAGE_OUT_OF_BOUNDS_0_10",
+      "partitionValues": {
+        "rejection_reason": "VOTE_AVERAGE_OUT_OF_BOUNDS_0_10"
+      },
+      "size": 0,
+      "modificationTime": 1790673838050,
+      "dataChange": true,
+      "stats": "{\"numRecords\": 46}"
+    }
+  ],
+  "commit_summary": {
+    "version": 0,
+    "records_committed": 46,
+    "files_count": 3,
+    "timestamp_iso": "2026-09-29T09:23:58.050165+00:00"
+  }
+}

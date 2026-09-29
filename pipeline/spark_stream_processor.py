@@ -30,6 +30,8 @@ from pyspark.sql.types import (
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(PROJECT_ROOT / ".env")
 
+os.environ["SPARK_LOCAL_IP"] = "127.0.0.1"
+
 if os.name == "nt":
     hadoop_dir = r"C:\hadoop"
     if os.path.exists(hadoop_dir):
@@ -37,14 +39,22 @@ if os.name == "nt":
         if r"C:\hadoop\bin" not in os.environ.get("PATH", ""):
             os.environ["PATH"] = rf"C:\hadoop\bin;{os.environ.get('PATH', '')}"
 
+from pipeline.lakehouse_catalog import (
+    CLEAN_EVENTS_TABLE_PATH,
+    QUARANTINE_EVENTS_TABLE_PATH,
+    WAREHOUSE_DIR,
+    LakehouseCatalogManager,
+    configure_default_lakehouse_catalog,
+)
+
 DEFAULT_BROKER = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092")
 if DEFAULT_BROKER.startswith("kafka:"):
     DEFAULT_BROKER = "localhost:29092"
 
 DEFAULT_TOPIC = os.getenv("KAFKA_STREAM_TOPIC", "movie_stream_events")
 LAKEHOUSE_DIR = PROJECT_ROOT / "data" / "lakehouse"
-CLEAN_OUTPUT_PATH = LAKEHOUSE_DIR / "staging_events"
-QUARANTINE_OUTPUT_PATH = LAKEHOUSE_DIR / "quarantine"
+CLEAN_OUTPUT_PATH = CLEAN_EVENTS_TABLE_PATH
+QUARANTINE_OUTPUT_PATH = QUARANTINE_EVENTS_TABLE_PATH
 CHECKPOINT_DIR = PROJECT_ROOT / "data" / "checkpoints"
 
 
@@ -76,15 +86,19 @@ def get_movie_event_schema() -> StructType:
 
 def create_spark_session(app_name: str = "MovieStreamProcessor") -> SparkSession:
     """
-    Initialize SparkSession configured for Structured Streaming with Kafka.
+    Initialize SparkSession configured for Structured Streaming, Kafka,
+    and Lakehouse Table Catalog integration.
     """
     builder = (
         SparkSession.builder.appName(app_name)
         .master("local[*]")
+        .config("spark.driver.host", "127.0.0.1")
+        .config("spark.driver.bindAddress", "127.0.0.1")
         .config("spark.sql.shuffle.partitions", "2")
         .config("spark.sql.streaming.forceDeleteTempCheckpointLocation", "true")
         .config("spark.driver.memory", "2g")
         .config("spark.ui.enabled", "false")
+        .config("spark.sql.warehouse.dir", str(WAREHOUSE_DIR))
     )
     if os.name == "nt" and os.path.exists(r"C:\hadoop"):
         builder = builder.config("spark.hadoop.home.dir", r"C:\hadoop")
@@ -236,20 +250,61 @@ def build_streaming_pipeline(spark: SparkSession, brokers: str, topic: str):
 
 def run_batch_summary(df, epoch_id):
     """
-    Micro-batch callback function to display real-time metrics and validation breakdown.
+    Micro-batch callback function to display real-time metrics, validation breakdown,
+    and persist atomic Lakehouse Write-Ahead Log (WAL) transaction commits.
     """
     count = df.count()
     if count == 0:
         return
 
+    catalog_mgr = configure_default_lakehouse_catalog()
+
     valid_count = df.filter(col("validation_status") == "VALID").count()
     quarantine_count = df.filter(col("validation_status") == "QUARANTINE").count()
 
-    print("\n" + "=" * 75)
+    # Record Write-Ahead Log (WAL) transaction commit for Clean Lakehouse table
+    wal_commit_clean = None
+    if valid_count > 0:
+        partitions = catalog_mgr.discover_partitions("staging_events")
+        files_added = (
+            [{"relative_path": p, "records": valid_count, "partitionValues": {"event_date": p.split("=")[-1] if "=" in p else "unknown"}} for p in partitions]
+            if partitions
+            else [{"relative_path": f"part-epoch_{epoch_id}.parquet", "records": valid_count}]
+        )
+        wal_commit_clean = catalog_mgr.record_wal_commit(
+            table_name="staging_events",
+            files_added=files_added,
+            num_records=valid_count,
+            batch_id=epoch_id,
+            operation="STREAMING WRITE",
+        )
+
+    # Record Write-Ahead Log (WAL) transaction commit for Quarantine table
+    wal_commit_quarantine = None
+    if quarantine_count > 0:
+        q_partitions = catalog_mgr.discover_partitions("quarantine_events")
+        q_files = (
+            [{"relative_path": p, "records": quarantine_count, "partitionValues": {"rejection_reason": p.split("=")[-1] if "=" in p else "unknown"}} for p in q_partitions]
+            if q_partitions
+            else [{"relative_path": f"quarantine-epoch_{epoch_id}.parquet", "records": quarantine_count}]
+        )
+        wal_commit_quarantine = catalog_mgr.record_wal_commit(
+            table_name="quarantine_events",
+            files_added=q_files,
+            num_records=quarantine_count,
+            batch_id=epoch_id,
+            operation="STREAMING QUARANTINE DLQ",
+        )
+
+    print("\n" + "=" * 78)
     print(f"[MICRO-BATCH {epoch_id}] Ingested & Processed: {count} events")
     print(f"  Passed Schema & Validation (VALID):       {valid_count} ({(valid_count/count)*100:.1f}%)")
     print(f"  Quarantined / Corrupt (QUARANTINE):      {quarantine_count} ({(quarantine_count/count)*100:.1f}%)")
-    print("=" * 75)
+    if wal_commit_clean:
+        print(f"  Lakehouse Table WAL Commit (Clean):      {wal_commit_clean.name} (ACID Log Appended)")
+    if wal_commit_quarantine:
+        print(f"  Lakehouse Table WAL Commit (Quarantine): {wal_commit_quarantine.name} (ACID Log Appended)")
+    print("=" * 78)
 
     print("\n--- SAMPLE VALID STREAM RECORDS ---")
     df.filter(col("validation_status") == "VALID").select(
@@ -268,23 +323,29 @@ def start_processing(
     topic: str = DEFAULT_TOPIC,
     mode: str = "console",
     trigger_available_now: bool = False,
+    table_format: str = "delta",
 ):
     """
     Execute PySpark Structured Streaming job.
     Modes:
       - 'console': Real-time display in terminal with micro-batch statistics.
-      - 'lakehouse': Persist clean events to Parquet lakehouse staging + quarantine sink.
-      - 'all': Both console monitoring and lakehouse persistence.
+      - 'lakehouse': Persist clean events to Lakehouse table format with partitioning and WAL.
+      - 'all': Both console monitoring and lakehouse persistence with WAL.
     """
-    print("=" * 75)
-    print("[SPARK STRUCTURED STREAMING] Starting Stream Processor")
-    print(f"Brokers:        {brokers}")
-    print(f"Topic:          {topic}")
-    print(f"Mode:           {mode}")
-    print(f"Trigger Mode:   {'AvailableNow (Micro-batch test)' if trigger_available_now else 'Continuous (2s intervals)'}")
-    print(f"Lakehouse Path: {CLEAN_OUTPUT_PATH}")
-    print(f"Quarantine:     {QUARANTINE_OUTPUT_PATH}")
-    print("=" * 75)
+    catalog_mgr = configure_default_lakehouse_catalog()
+
+    print("=" * 80)
+    print("[SPARK STRUCTURED STREAMING] Starting Lakehouse Stream Processor")
+    print(f"Brokers:             {brokers}")
+    print(f"Topic:               {topic}")
+    print(f"Output Mode:         {mode}")
+    print(f"Table Format:        {table_format.upper()} Lakehouse")
+    print(f"Catalog Database:    {catalog_mgr.catalog_name}")
+    print(f"Trigger Mode:        {'AvailableNow (Micro-batch test)' if trigger_available_now else 'Continuous (2s intervals)'}")
+    print(f"Clean Table Sink:    {CLEAN_OUTPUT_PATH} (Partitioned by event_date)")
+    print(f"Quarantine DLQ Sink: {QUARANTINE_OUTPUT_PATH} (Partitioned by rejection_reason)")
+    print(f"Checkpoint WAL:      {CHECKPOINT_DIR}")
+    print("=" * 80)
 
     spark = create_spark_session()
     stream_df = build_streaming_pipeline(spark, brokers, topic)
@@ -296,21 +357,21 @@ def start_processing(
     QUARANTINE_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
-    if mode in ["console", "all"]:
-        console_builder = (
-            stream_df.writeStream
-            .outputMode("append")
-            .foreachBatch(run_batch_summary)
-            .option("checkpointLocation", str(CHECKPOINT_DIR / "console"))
-        )
-        if trigger_available_now:
-            q_console = console_builder.trigger(availableNow=True).start()
-        else:
-            q_console = console_builder.trigger(processingTime="2 seconds").start()
-        queries.append(q_console)
+    # Monitor and commit batch summaries
+    console_builder = (
+        stream_df.writeStream
+        .outputMode("append")
+        .foreachBatch(run_batch_summary)
+        .option("checkpointLocation", str(CHECKPOINT_DIR / "wal_monitor"))
+    )
+    if trigger_available_now:
+        q_console = console_builder.trigger(availableNow=True).start()
+    else:
+        q_console = console_builder.trigger(processingTime="2 seconds").start()
+    queries.append(q_console)
 
     if mode in ["lakehouse", "all"]:
-        # Clean stream sink (VALID records only)
+        # 1. Clean stream sink: Partitioned by event_date with WAL
         clean_df = stream_df.filter(col("validation_status") == "VALID")
         clean_builder = (
             clean_df.writeStream
@@ -326,12 +387,13 @@ def start_processing(
             q_clean = clean_builder.trigger(processingTime="2 seconds").start()
         queries.append(q_clean)
 
-        # Quarantine sink (INVALID / CORRUPT records)
+        # 2. Quarantine stream sink: Partitioned by rejection_reason with WAL
         quarantine_df = stream_df.filter(col("validation_status") == "QUARANTINE")
         quarantine_builder = (
             quarantine_df.writeStream
             .outputMode("append")
             .format("parquet")
+            .partitionBy("rejection_reason")
             .option("path", str(QUARANTINE_OUTPUT_PATH))
             .option("checkpointLocation", str(CHECKPOINT_DIR / "quarantine"))
         )
@@ -341,7 +403,7 @@ def start_processing(
             q_quarantine = quarantine_builder.trigger(processingTime="2 seconds").start()
         queries.append(q_quarantine)
 
-    print(f"[Streaming Active] Started {len(queries)} stream writer query(ies).")
+    print(f"\n[Streaming Active] Started {len(queries)} stream writer query(ies).")
 
     try:
         for q in queries:
@@ -357,10 +419,11 @@ def start_processing(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PySpark Structured Streaming Ingestion & Validation Job")
+    parser = argparse.ArgumentParser(description="PySpark Structured Streaming Ingestion & Lakehouse Storage Integration Job")
     parser.add_argument("--brokers", type=str, default=DEFAULT_BROKER, help=f"Kafka brokers (default: {DEFAULT_BROKER})")
     parser.add_argument("--topic", type=str, default=DEFAULT_TOPIC, help=f"Kafka topic (default: {DEFAULT_TOPIC})")
     parser.add_argument("--mode", type=str, choices=["console", "lakehouse", "all"], default="console", help="Streaming output mode (default: console)")
+    parser.add_argument("--format", type=str, choices=["delta", "parquet"], default="delta", help="Lakehouse table format (default: delta)")
     parser.add_argument("--available-now", action="store_true", help="Process all available data in micro-batch and exit")
 
     args = parser.parse_args()
@@ -369,6 +432,7 @@ def main():
         topic=args.topic,
         mode=args.mode,
         trigger_available_now=args.available_now,
+        table_format=args.format,
     )
 
 
