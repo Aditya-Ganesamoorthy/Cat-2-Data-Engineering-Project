@@ -1,0 +1,3 @@
+v1
+{"path":"file:///C:/Users/adity/Documents/Semester%209/Lab/Data%20Engineering%20Lab/Cat-2/Cat-1%20DE%20Project/data/lakehouse/quarantine/part-00000-a597d403-38d5-45ce-bdf1-914c8bbe66b0-c000.snappy.parquet","size":2712,"isDir":false,"modificationTime":1790625131436,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///C:/Users/adity/Documents/Semester%209/Lab/Data%20Engineering%20Lab/Cat-2/Cat-1%20DE%20Project/data/lakehouse/quarantine/part-00001-b5c9eced-4560-4133-8728-d992047a98a8-c000.snappy.parquet","size":7239,"isDir":false,"modificationTime":1790625131444,"blockReplication":1,"blockSize":33554432,"action":"add"}
