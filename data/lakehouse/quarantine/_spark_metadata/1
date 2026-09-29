@@ -1,4 +1,0 @@
-v1
-{"path":"file:///C:/Users/adity/Documents/Semester%209/Lab/Data%20Engineering%20Lab/Cat-2/Cat-1%20DE%20Project/data/lakehouse/quarantine/part-00000-d1a5d28e-402c-46bd-8c33-f63c6fb71e18-c000.snappy.parquet","size":2712,"isDir":false,"modificationTime":1790625271029,"blockReplication":1,"blockSize":33554432,"action":"add"}
-{"path":"file:///C:/Users/adity/Documents/Semester%209/Lab/Data%20Engineering%20Lab/Cat-2/Cat-1%20DE%20Project/data/lakehouse/quarantine/part-00001-d46eb595-d7ec-45c4-ad78-9b6f0b92f267-c000.snappy.parquet","size":8165,"isDir":false,"modificationTime":1790625271042,"blockReplication":1,"blockSize":33554432,"action":"add"}
-{"path":"file:///C:/Users/adity/Documents/Semester%209/Lab/Data%20Engineering%20Lab/Cat-2/Cat-1%20DE%20Project/data/lakehouse/quarantine/part-00002-251ead02-1b40-4d06-8f5d-2ed47f93af94-c000.snappy.parquet","size":10783,"isDir":false,"modificationTime":1790625271049,"blockReplication":1,"blockSize":33554432,"action":"add"}

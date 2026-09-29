@@ -1,0 +1,15 @@
+Commands to run this project;
+
+> docker ps
+> cd airflow/
+> docker compose up -d
+> docker compose ps
+> Open http://localhost:8080 [Username: admin, Password: admin]
+> Trigger Dag pipelines
+
+
+For Week-1:
+> python pipeline/test_stream_pipeline.py
+> docker exec -it de-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic movie_pipeline --from-beginning
+
+For Week-2:
