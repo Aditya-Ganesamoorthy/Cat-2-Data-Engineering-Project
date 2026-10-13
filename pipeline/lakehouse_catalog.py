@@ -27,8 +27,20 @@ if os.name == "nt" and os.path.exists(r"C:\hadoop"):
 from dotenv import load_dotenv
 load_dotenv(PROJECT_ROOT / ".env")
 
-from pyspark.sql import SparkSession
-from delta import configure_spark_with_delta_pip
+try:
+    from pyspark.sql import SparkSession
+    from delta import configure_spark_with_delta_pip
+    SPARK_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    SparkSession = None
+    configure_spark_with_delta_pip = None
+    SPARK_AVAILABLE = False
+
+try:
+    import deltalake
+    DELTALAKE_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    DELTALAKE_AVAILABLE = False
 
 LAKEHOUSE_BASE_DIR = PROJECT_ROOT / "data" / "lakehouse"
 WAREHOUSE_DIR = PROJECT_ROOT / "data" / "warehouse"
@@ -38,47 +50,55 @@ QUARANTINE_EVENTS_TABLE_PATH = LAKEHOUSE_BASE_DIR / "quarantine_events"
 DATABASE_NAME = "movie_lakehouse"
 
 
-def get_catalog_spark_session(app_name: str = "LakehouseCatalogManager") -> SparkSession:
+def get_catalog_spark_session(app_name: str = "LakehouseCatalogManager") -> Optional[Any]:
     """
     Creates a SparkSession configured with the genuine Delta Lake catalog
     (DeltaSparkSessionExtension + DeltaCatalog) and persistent Hive/Derby Metastore support.
+    Returns None if PySpark or JVM is unavailable.
     """
-    warehouse_dir = WAREHOUSE_DIR.as_posix()
-    builder = (
-        SparkSession.builder.appName(app_name)
-        .master("local[*]")
-        .config("spark.driver.host", "127.0.0.1")
-        .config("spark.driver.bindAddress", "127.0.0.1")
-        .config("spark.sql.shuffle.partitions", "2")
-        .config("spark.ui.enabled", "false")
-        .config("spark.sql.warehouse.dir", warehouse_dir)
-        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-        .enableHiveSupport()
-    )
-    if os.name == "nt" and os.path.exists(r"C:\hadoop"):
-        builder = builder.config("spark.hadoop.home.dir", r"C:\hadoop")
+    if not SPARK_AVAILABLE:
+        return None
+    try:
+        warehouse_dir = WAREHOUSE_DIR.as_posix()
+        builder = (
+            SparkSession.builder.appName(app_name)
+            .master("local[*]")
+            .config("spark.driver.host", "127.0.0.1")
+            .config("spark.driver.bindAddress", "127.0.0.1")
+            .config("spark.sql.shuffle.partitions", "2")
+            .config("spark.ui.enabled", "false")
+            .config("spark.sql.warehouse.dir", warehouse_dir)
+            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+            .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+            .enableHiveSupport()
+        )
+        if os.name == "nt" and os.path.exists(r"C:\hadoop"):
+            builder = builder.config("spark.hadoop.home.dir", r"C:\hadoop")
 
-    spark = configure_spark_with_delta_pip(builder).getOrCreate()
-    spark.sparkContext.setLogLevel("WARN")
-    return spark
+        spark = configure_spark_with_delta_pip(builder).getOrCreate()
+        spark.sparkContext.setLogLevel("WARN")
+        return spark
+    except Exception as e:
+        print(f"[LakehouseCatalog] Notice: Could not initialize local SparkSession ({e}). Falling back to standalone metadata mode.")
+        return None
 
 
 class LakehouseCatalogManager:
     """
     Operational Delta Lake Table Catalog Manager.
-    Uses Spark's native DeltaCatalog to create, inspect, and query Delta Lake tables.
+    Uses Spark's native DeltaCatalog when available, or standalone deltalake/filesystem
+    metadata inspection in lightweight container environments (such as Airflow workers).
     """
 
-    def __init__(self, spark: Optional[SparkSession] = None):
+    def __init__(self, spark: Optional[Any] = None):
         self._spark = spark
         self.catalog_name = DATABASE_NAME
         self.clean_path = CLEAN_EVENTS_TABLE_PATH
         self.quarantine_path = QUARANTINE_EVENTS_TABLE_PATH
 
     @property
-    def spark(self) -> SparkSession:
-        if self._spark is None:
+    def spark(self) -> Optional[Any]:
+        if self._spark is None and SPARK_AVAILABLE:
             self._spark = get_catalog_spark_session()
         return self._spark
 
@@ -92,95 +112,132 @@ class LakehouseCatalogManager:
         self.quarantine_path.mkdir(parents=True, exist_ok=True)
         WAREHOUSE_DIR.mkdir(parents=True, exist_ok=True)
 
-        self.spark.sql(f"CREATE DATABASE IF NOT EXISTS {self.catalog_name}")
+        if self.spark is not None:
+            self.spark.sql(f"CREATE DATABASE IF NOT EXISTS {self.catalog_name}")
 
-        staging_ddl = f"""
-        CREATE TABLE IF NOT EXISTS {self.catalog_name}.staging_events (
-            event_id STRING,
-            event_type STRING,
-            event_time TIMESTAMP,
-            event_date DATE,
-            event_hour INT,
-            user_id STRING,
-            session_id STRING,
-            device STRING,
-            country STRING,
-            tmdb_id BIGINT,
-            title STRING,
-            genres STRING,
-            popularity DOUBLE,
-            vote_average DOUBLE,
-            vote_count INT,
-            release_date STRING,
-            view_duration_seconds INT,
-            user_rating DOUBLE,
-            rating_bracket STRING,
-            engagement_score DOUBLE,
-            validation_status STRING,
-            rejection_reason STRING,
-            corrupt_record_raw STRING,
-            kafka_partition INT,
-            kafka_offset BIGINT,
-            kafka_timestamp TIMESTAMP
-        )
-        USING DELTA
-        PARTITIONED BY (event_date)
-        LOCATION '{self.clean_path.as_posix()}'
-        """
+            staging_ddl = f"""
+            CREATE TABLE IF NOT EXISTS {self.catalog_name}.staging_events (
+                event_id STRING,
+                event_type STRING,
+                event_time TIMESTAMP,
+                event_date DATE,
+                event_hour INT,
+                user_id STRING,
+                session_id STRING,
+                device STRING,
+                country STRING,
+                tmdb_id BIGINT,
+                title STRING,
+                genres STRING,
+                popularity DOUBLE,
+                vote_average DOUBLE,
+                vote_count INT,
+                release_date STRING,
+                view_duration_seconds INT,
+                user_rating DOUBLE,
+                rating_bracket STRING,
+                engagement_score DOUBLE,
+                validation_status STRING,
+                rejection_reason STRING,
+                corrupt_record_raw STRING,
+                kafka_partition INT,
+                kafka_offset BIGINT,
+                kafka_timestamp TIMESTAMP
+            )
+            USING DELTA
+            PARTITIONED BY (event_date)
+            LOCATION '{self.clean_path.as_posix()}'
+            """
 
-        quarantine_ddl = f"""
-        CREATE TABLE IF NOT EXISTS {self.catalog_name}.quarantine_events (
-            event_id STRING,
-            event_type STRING,
-            event_time TIMESTAMP,
-            event_date DATE,
-            event_hour INT,
-            user_id STRING,
-            session_id STRING,
-            device STRING,
-            country STRING,
-            tmdb_id BIGINT,
-            title STRING,
-            genres STRING,
-            popularity DOUBLE,
-            vote_average DOUBLE,
-            vote_count INT,
-            release_date STRING,
-            view_duration_seconds INT,
-            user_rating DOUBLE,
-            rating_bracket STRING,
-            engagement_score DOUBLE,
-            validation_status STRING,
-            rejection_reason STRING,
-            corrupt_record_raw STRING,
-            kafka_partition INT,
-            kafka_offset BIGINT,
-            kafka_timestamp TIMESTAMP
-        )
-        USING DELTA
-        PARTITIONED BY (event_date)
-        LOCATION '{self.quarantine_path.as_posix()}'
-        """
+            quarantine_ddl = f"""
+            CREATE TABLE IF NOT EXISTS {self.catalog_name}.quarantine_events (
+                event_id STRING,
+                event_type STRING,
+                event_time TIMESTAMP,
+                event_date DATE,
+                event_hour INT,
+                user_id STRING,
+                session_id STRING,
+                device STRING,
+                country STRING,
+                tmdb_id BIGINT,
+                title STRING,
+                genres STRING,
+                popularity DOUBLE,
+                vote_average DOUBLE,
+                vote_count INT,
+                release_date STRING,
+                view_duration_seconds INT,
+                user_rating DOUBLE,
+                rating_bracket STRING,
+                engagement_score DOUBLE,
+                validation_status STRING,
+                rejection_reason STRING,
+                corrupt_record_raw STRING,
+                kafka_partition INT,
+                kafka_offset BIGINT,
+                kafka_timestamp TIMESTAMP
+            )
+            USING DELTA
+            PARTITIONED BY (event_date)
+            LOCATION '{self.quarantine_path.as_posix()}'
+            """
 
-        self.spark.sql(staging_ddl)
-        self.spark.sql(quarantine_ddl)
+            self.spark.sql(staging_ddl)
+            self.spark.sql(quarantine_ddl)
+            print(f"[Catalog] Successfully synchronized Hive/Spark metastore catalog for {self.catalog_name}.")
+        else:
+            print(f"[Catalog] Standalone filesystem catalog initialized at {LAKEHOUSE_BASE_DIR}.")
+            print(f"  |-- staging_events: {self.clean_path}")
+            print(f"  |-- quarantine_events: {self.quarantine_path}")
 
     def list_tables(self) -> List[str]:
         """Returns list of registered table names in the catalog."""
-        tables_df = self.spark.sql(f"SHOW TABLES IN {self.catalog_name}")
-        return [row["tableName"] for row in tables_df.collect()]
+        if self.spark is not None:
+            tables_df = self.spark.sql(f"SHOW TABLES IN {self.catalog_name}")
+            return [row["tableName"] for row in tables_df.collect()]
+        
+        tables = []
+        if (self.clean_path / "_delta_log").exists():
+            tables.append("staging_events")
+        if (self.quarantine_path / "_delta_log").exists():
+            tables.append("quarantine_events")
+        return tables
 
     def describe_table(self, table_name: str):
         """Describes schema and extended metadata of a table."""
         full_name = self._resolve_table_name(table_name)
-        return self.spark.sql(f"DESCRIBE TABLE EXTENDED {full_name}")
+        if self.spark is not None:
+            return self.spark.sql(f"DESCRIBE TABLE EXTENDED {full_name}")
+
+        target_path = self.clean_path if "staging" in table_name.lower() else self.quarantine_path
+        if DELTALAKE_AVAILABLE and (target_path / "_delta_log").exists():
+            dt = deltalake.DeltaTable(target_path.as_posix())
+            meta = dt.metadata()
+            print("=" * 80)
+            print(f" EXTENDED TABLE SPECIFICATION (deltalake): {table_name}")
+            print("=" * 80)
+            print(f"Table Location:     {target_path}")
+            print(f"Partition Columns:  {meta.partition_columns}")
+            print(f"Current Version:    {dt.version()}")
+            print("\nSchema:")
+            for field in dt.schema().fields:
+                print(f"  |-- {field.name}: {field.type}")
+        return None
 
     def get_table_history(self, table_name: str):
         """
         Executes genuine native Delta Lake DESCRIBE HISTORY command.
         """
         full_name = self._resolve_table_name(table_name)
-        return self.spark.sql(f"DESCRIBE HISTORY {full_name}")
+        if self.spark is not None:
+            return self.spark.sql(f"DESCRIBE HISTORY {full_name}")
+
+        target_path = self.clean_path if "staging" in table_name.lower() else self.quarantine_path
+        if DELTALAKE_AVAILABLE and (target_path / "_delta_log").exists():
+            dt = deltalake.DeltaTable(target_path.as_posix())
+            return dt.history()
+        return []
 
     def discover_partitions(self, table_name: str) -> List[str]:
         """
@@ -192,8 +249,9 @@ class LakehouseCatalogManager:
         partitions = []
         for p in sorted(target_path.glob("event_date=*")):
             if p.is_dir():
-                file_count = len(list(p.glob("*.parquet")))
-                size_kb = sum(f.stat().st_size for f in p.glob("*.parquet")) / 1024
+                parquet_files = list(p.glob("*.parquet"))
+                file_count = len(parquet_files)
+                size_kb = sum(f.stat().st_size for f in parquet_files) / 1024
                 partitions.append(f"{p.name} ({file_count} files, {size_kb:.1f} KB)")
         return partitions
 
@@ -282,11 +340,14 @@ WITH (
 
     def close(self):
         if self._spark is not None:
-            self._spark.stop()
+            try:
+                self._spark.stop()
+            except Exception:
+                pass
             self._spark = None
 
 
-def configure_default_lakehouse_catalog(spark: Optional[SparkSession] = None) -> LakehouseCatalogManager:
+def configure_default_lakehouse_catalog(spark: Optional[Any] = None) -> LakehouseCatalogManager:
     """Helper to initialize and return the Lakehouse catalog manager."""
     mgr = LakehouseCatalogManager(spark)
     mgr.init_catalog()
@@ -312,7 +373,7 @@ def main():
         print(" DELTA LAKE TABLE CATALOG INITIALIZED")
         print(f" Database: {catalog_mgr.catalog_name}")
         print(" Tables:   staging_events, quarantine_events")
-        print(" Provider: Delta Lake (org.apache.spark.sql.delta.catalog.DeltaCatalog)")
+        print(" Provider: Delta Lake")
         print("=" * 80)
 
     if args.list_tables:
@@ -326,18 +387,34 @@ def main():
 
     if args.describe:
         desc_df = catalog_mgr.describe_table(args.describe)
-        print("=" * 80)
-        print(f" EXTENDED TABLE SPECIFICATION: {args.describe}")
-        print("=" * 80)
-        desc_df.show(50, truncate=False)
+        if desc_df is not None:
+            print("=" * 80)
+            print(f" EXTENDED TABLE SPECIFICATION: {args.describe}")
+            print("=" * 80)
+            desc_df.show(50, truncate=False)
 
     if args.history:
         try:
-            hist_df = catalog_mgr.get_table_history(args.history)
+            hist = catalog_mgr.get_table_history(args.history)
             print("=" * 80)
             print(f" DELTA LAKE TRANSACTION HISTORY (DESCRIBE HISTORY): {args.history}")
             print("=" * 80)
-            hist_df.select("version", "timestamp", "operation", "operationParameters").show(20, truncate=False)
+            if hasattr(hist, "select"):
+                hist.select("version", "timestamp", "operation", "operationParameters").show(20, truncate=False)
+            elif isinstance(hist, list):
+                print(f"{'Version':<10} {'Timestamp (UTC)':<26} {'Operation':<22} {'Parameters'}")
+                print("-" * 80)
+                for commit in hist[:20]:
+                    v = commit.get("version", "N/A")
+                    ts = commit.get("timestamp", "N/A")
+                    if isinstance(ts, (int, float)):
+                        from datetime import datetime, timezone
+                        ts = datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                    op = commit.get("operation", "UNKNOWN")
+                    params = str(commit.get("operationParameters", ""))
+                    if len(params) > 40:
+                        params = params[:37] + "..."
+                    print(f"{str(v):<10} {str(ts):<26} {str(op):<22} {params}")
         except Exception as e:
             print(f"Error fetching Delta history for '{args.history}': {e}")
 
@@ -370,3 +447,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
