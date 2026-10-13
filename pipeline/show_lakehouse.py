@@ -1,11 +1,12 @@
 """
 Lakehouse Storage Viewer & Query CLI.
-Directly inspects, queries, and displays data stored in the Lakehouse
+Directly inspects, queries, and displays data stored in genuine Delta Lake tables
 (both clean staging_events and quarantine DLQ tables), including
 physical partitions, schema enforcement, WAL transaction logs, and analytics.
 """
 
 import argparse
+import datetime
 import json
 import os
 import sys
@@ -17,55 +18,118 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 LAKEHOUSE_BASE_DIR = PROJECT_ROOT / "data" / "lakehouse"
 STAGING_PATH = LAKEHOUSE_BASE_DIR / "staging_events"
-QUARANTINE_PATH = LAKEHOUSE_BASE_DIR / "quarantine"
+QUARANTINE_PATH = LAKEHOUSE_BASE_DIR / "quarantine_events"
+if not QUARANTINE_PATH.exists() and (LAKEHOUSE_BASE_DIR / "quarantine").exists():
+    QUARANTINE_PATH = LAKEHOUSE_BASE_DIR / "quarantine"
 
 
 def load_table_dataset(table_path: Path):
     """
-    Loads Parquet files from Lakehouse table using pyarrow dataset
-    with automatic partition discovery.
+    Loads table data through the genuine Delta Lake reader (DeltaTable protocol engine),
+    ensuring snapshot isolation and reading only valid ACID-committed files.
     """
-    import pyarrow.dataset as ds
     if not table_path.exists():
         return None
     try:
-        dataset = ds.dataset(str(table_path), partitioning="hive", format="parquet")
-        return dataset.to_table().to_pandas()
+        from deltalake import DeltaTable
+        dt = DeltaTable(str(table_path))
+        return dt.to_pandas()
     except Exception as e:
-        # Fallback for empty or non-existent
-        return None
+        # Fallback to PySpark Delta Reader if deltalake library encounters an issue
+        try:
+            from pipeline.lakehouse_catalog import get_catalog_spark_session
+            spark = get_catalog_spark_session("ShowLakehouseViewer")
+            df = spark.read.format("delta").load(str(table_path)).toPandas()
+            spark.stop()
+            return df
+        except Exception:
+            return None
 
 
 def get_latest_wal_commit(table_path: Path):
     """
-    Reads the latest ACID transaction log commit from _delta_log/
+    Reads the latest ACID transaction log commit through DeltaTable transaction history (genuine Delta Lake format).
     """
     delta_log_dir = table_path / "_delta_log"
     if not delta_log_dir.exists():
         return None
+    try:
+        from deltalake import DeltaTable
+        dt = DeltaTable(str(table_path))
+        hist = dt.history(1)
+        if hist:
+            latest = hist[0]
+            raw_ts = latest.get("timestamp")
+            if isinstance(raw_ts, (int, float)):
+                ts = datetime.datetime.fromtimestamp(raw_ts / 1000, tz=datetime.timezone.utc).isoformat()
+            else:
+                ts = str(raw_ts)
+            metrics = latest.get("operationMetrics", {})
+            rows_added = int(metrics.get("numOutputRows", metrics.get("numAddedRows", 0)))
+            return {
+                "filename": f"{latest.get('version', 0):020d}.json",
+                "version": latest.get("version", dt.version()),
+                "operation": latest.get("operation", "WRITE"),
+                "timestamp": ts,
+                "records_added": rows_added,
+            }
+    except Exception:
+        pass
+
+    # Direct JSON commit fallback
     commit_files = sorted(delta_log_dir.glob("*.json"))
     if not commit_files:
         return None
+    latest_file = commit_files[-1]
+    version_num = int(latest_file.stem) if latest_file.stem.isdigit() else 0
+    op = "WRITE"
+    ts = "N/A"
+    records_added = 0
     try:
-        with open(commit_files[-1], "r", encoding="utf-8") as f:
-            raw = json.load(f)
-            summary = raw.get("commit_summary", {})
-            info = raw.get("commitInfo", {})
-            return {
-                "filename": commit_files[-1].name,
-                "version": summary.get("version", info.get("readVersion", 0)),
-                "operation": info.get("operation", "STREAMING WRITE"),
-                "timestamp": summary.get("timestamp_iso", str(info.get("timestamp", "N/A"))),
-                "records_added": summary.get("records_committed", 0),
-            }
+        with open(latest_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                action = json.loads(line)
+                if "commitInfo" in action:
+                    ci = action["commitInfo"]
+                    op = ci.get("operation", "WRITE")
+                    raw_ts = ci.get("timestamp")
+                    if isinstance(raw_ts, (int, float)):
+                        ts = datetime.datetime.fromtimestamp(raw_ts / 1000, tz=datetime.timezone.utc).isoformat()
+                    else:
+                        ts = str(raw_ts)
+                    metrics = ci.get("operationMetrics", {})
+                    records_added = int(metrics.get("numOutputRows", 0))
+                elif "add" in action and records_added == 0:
+                    stats_str = action["add"].get("stats")
+                    if stats_str:
+                        stats = json.loads(stats_str)
+                        records_added += stats.get("numRecords", 0)
+
+        return {
+            "filename": latest_file.name,
+            "version": version_num,
+            "operation": op,
+            "timestamp": ts,
+            "records_added": records_added,
+        }
     except Exception:
-        return None
+        return {
+            "filename": latest_file.name,
+            "version": version_num,
+            "operation": "WRITE",
+            "timestamp": "N/A",
+            "records_added": records_added,
+        }
 
 
 def display_staging_table(limit: int = 10, date_filter: Optional[str] = None):
     print("\n" + "=" * 95)
     print(" LAKEHOUSE TABLE: movie_lakehouse.staging_events (Clean & Validated Events)")
     print(f" Storage Path:    {STAGING_PATH}")
+    print(" Format:          DELTA LAKE (Native Transaction Engine)")
     print(" Partitioned By:  [event_date]")
     print("=" * 95)
 
@@ -105,8 +169,7 @@ def display_staging_table(limit: int = 10, date_filter: Optional[str] = None):
     avail_cols = [c for c in cols_to_show if c in df.columns]
 
     sample_df = df[avail_cols].tail(limit)
-    
-    # Formatted Header
+
     header = (
         f"{'Event ID':<38} "
         f"{'Type':<17} "
@@ -160,7 +223,8 @@ def display_quarantine_table(limit: int = 10):
     print("\n" + "=" * 95)
     print(" LAKEHOUSE TABLE: movie_lakehouse.quarantine_events (Dead-Letter Queue / DLQ)")
     print(f" Storage Path:    {QUARANTINE_PATH}")
-    print(" Partitioned By:  [rejection_reason]")
+    print(" Format:          DELTA LAKE (Native Transaction Engine)")
+    print(" Partitioned By:  [event_date]")
     print("=" * 95)
 
     df = load_table_dataset(QUARANTINE_PATH)
@@ -177,7 +241,17 @@ def display_quarantine_table(limit: int = 10):
         print(f"   - Operation:              {wal_info['operation']}")
         print(f"   - Records Quarantined:    {wal_info['records_added']}")
 
-    # Partitions by rejection reason
+    # Partitions by date
+    partitions = [p.name for p in QUARANTINE_PATH.glob("event_date=*") if p.is_dir()]
+    if partitions:
+        print(f"\n Active Partitions ({len(partitions)}):")
+        for p in sorted(partitions):
+            p_dir = QUARANTINE_PATH / p
+            file_count = len(list(p_dir.glob("*.parquet")))
+            size_kb = sum(f.stat().st_size for f in p_dir.glob("*.parquet")) / 1024
+            print(f"   |-- {p:<25} ({file_count} files, {size_kb:.1f} KB)")
+
+    # Partitions by rejection reason column breakdown
     if "rejection_reason" in df.columns:
         print("\n Quarantined Violations by Rejection Reason:")
         counts = df["rejection_reason"].value_counts()
@@ -190,7 +264,7 @@ def display_quarantine_table(limit: int = 10):
     sample_df = df.tail(limit)
 
     print("-" * 115)
-    print(f"{'Event ID':<38} {'TMDB ID':<10} {'Rejection Reason':<35} {'Corrupt Payload Snippet'}")
+    print(f"{'Event ID':<38} {'TMDB ID':<10} {'Rejection Reason':<35} {'Event Date'}")
     print("-" * 115)
 
     for _, row in sample_df.iterrows():
@@ -201,10 +275,8 @@ def display_quarantine_table(limit: int = 10):
         if tid == "nan":
             tid = "NULL"
         reason = str(row.get("rejection_reason", "UNKNOWN"))[:33]
-        corrupt = str(row.get("corrupt_record_raw", ""))[:32].replace("\n", " ")
-        if not corrupt or corrupt == "nan":
-            corrupt = "-"
-        print(f"{eid:<38} {tid:<10} {reason:<35} {corrupt}")
+        edate = str(row.get("event_date", "-"))[:10]
+        print(f"{eid:<38} {tid:<10} {reason:<35} {edate}")
     print("-" * 115)
 
 

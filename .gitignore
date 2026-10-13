@@ -4,3 +4,6 @@ __pycache__/
 *.db
 airflow/logs/
 data/checkpoints/
+derby.log
+metastore_db/
+*.crc

@@ -9,4 +9,4 @@ RUN apt-get update \
 
 USER airflow
 
-RUN pip install --no-cache-dir confluent-kafka
+RUN pip install --no-cache-dir confluent-kafka python-dotenv requests

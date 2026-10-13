@@ -1,478 +1,371 @@
+"""
+Lakehouse Storage Catalog & Table Format Manager.
+Integrates directly with Delta Lake catalog (org.apache.spark.sql.delta.catalog.DeltaCatalog),
+providing operational DDL management, schema enforcement, table metadata,
+physical partition discovery, and Write-Ahead Log (WAL) transaction history.
+"""
+
 import argparse
-import datetime
-import json
 import os
 import sys
-import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from dotenv import load_dotenv
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+
+# Ensure Spark driver and worker processes use correct python executable and IP
+os.environ["PYSPARK_PYTHON"] = sys.executable
+os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
+os.environ["SPARK_LOCAL_IP"] = "127.0.0.1"
+
+if os.name == "nt" and os.path.exists(r"C:\hadoop"):
+    os.environ["HADOOP_HOME"] = r"C:\hadoop"
+    if r"C:\hadoop\bin" not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = rf"C:\hadoop\bin;{os.environ.get('PATH', '')}"
+
+from dotenv import load_dotenv
 load_dotenv(PROJECT_ROOT / ".env")
 
+from pyspark.sql import SparkSession
+from delta import configure_spark_with_delta_pip
+
 LAKEHOUSE_BASE_DIR = PROJECT_ROOT / "data" / "lakehouse"
-CATALOG_METADATA_DIR = LAKEHOUSE_BASE_DIR / "_catalog_metadata"
-CLEAN_EVENTS_TABLE_PATH = LAKEHOUSE_BASE_DIR / "staging_events"
-QUARANTINE_EVENTS_TABLE_PATH = LAKEHOUSE_BASE_DIR / "quarantine"
 WAREHOUSE_DIR = PROJECT_ROOT / "data" / "warehouse"
+CLEAN_EVENTS_TABLE_PATH = LAKEHOUSE_BASE_DIR / "staging_events"
+QUARANTINE_EVENTS_TABLE_PATH = LAKEHOUSE_BASE_DIR / "quarantine_events"
 
-DEFAULT_CATALOG_TYPE = os.getenv("LAKEHOUSE_CATALOG_TYPE", "delta").lower()
-HIVE_METASTORE_URI = os.getenv("HIVE_METASTORE_URI", "thrift://localhost:9083")
-NESSIE_URI = os.getenv("NESSIE_URI", "http://localhost:19120/api/v1")
+DATABASE_NAME = "movie_lakehouse"
 
 
-def get_staging_events_schema() -> Dict[str, Any]:
+def get_catalog_spark_session(app_name: str = "LakehouseCatalogManager") -> SparkSession:
     """
-    Returns canonical schema definition for Lakehouse Clean Staging Events table.
+    Creates a SparkSession configured with the genuine Delta Lake catalog
+    (DeltaSparkSessionExtension + DeltaCatalog) and persistent Hive/Derby Metastore support.
     """
-    return {
-        "fields": [
-            {"name": "event_id", "type": "string", "nullable": False, "metadata": {"comment": "Unique event UUID"}},
-            {"name": "event_type", "type": "string", "nullable": False, "metadata": {"comment": "Stream event category"}},
-            {"name": "event_time", "type": "timestamp", "nullable": False, "metadata": {"comment": "Event generation timestamp"}},
-            {"name": "event_date", "type": "date", "nullable": False, "metadata": {"comment": "Partition key (YYYY-MM-DD)"}},
-            {"name": "event_hour", "type": "integer", "nullable": True, "metadata": {"comment": "Event hour (0-23)"}},
-            {"name": "user_id", "type": "string", "nullable": True, "metadata": {"comment": "User identifier"}},
-            {"name": "session_id", "type": "string", "nullable": True, "metadata": {"comment": "User session UUID"}},
-            {"name": "device", "type": "string", "nullable": True, "metadata": {"comment": "Client device"}},
-            {"name": "country", "type": "string", "nullable": True, "metadata": {"comment": "Country code (ISO 3166-1)"}},
-            {"name": "tmdb_id", "type": "long", "nullable": False, "metadata": {"comment": "TMDB movie reference ID"}},
-            {"name": "title", "type": "string", "nullable": True, "metadata": {"comment": "Movie title"}},
-            {"name": "genres", "type": "string", "nullable": True, "metadata": {"comment": "Comma-separated genres"}},
-            {"name": "popularity", "type": "double", "nullable": True, "metadata": {"comment": "Popularity metric"}},
-            {"name": "vote_average", "type": "double", "nullable": True, "metadata": {"comment": "Audience vote average (0-10)"}},
-            {"name": "vote_count", "type": "integer", "nullable": True, "metadata": {"comment": "Number of ratings"}},
-            {"name": "release_date", "type": "string", "nullable": True, "metadata": {"comment": "Theatrical release date"}},
-            {"name": "view_duration_seconds", "type": "integer", "nullable": True, "metadata": {"comment": "Watch duration"}},
-            {"name": "user_rating", "type": "double", "nullable": True, "metadata": {"comment": "Individual rating score"}},
-            {"name": "rating_bracket", "type": "string", "nullable": True, "metadata": {"comment": "Masterpiece/High/Medium/Low"}},
-            {"name": "engagement_score", "type": "double", "nullable": True, "metadata": {"comment": "Duration * Rating score"}},
-            {"name": "validation_status", "type": "string", "nullable": False, "metadata": {"comment": "Quality status: VALID"}},
-            {"name": "rejection_reason", "type": "string", "nullable": True, "metadata": {"comment": "Validation rule verdict"}},
-            {"name": "corrupt_record_raw", "type": "string", "nullable": True, "metadata": {"comment": "Raw corrupt payload (if any)"}},
-            {"name": "kafka_partition", "type": "integer", "nullable": True, "metadata": {"comment": "Kafka source partition"}},
-            {"name": "kafka_offset", "type": "long", "nullable": True, "metadata": {"comment": "Kafka source offset"}},
-            {"name": "kafka_timestamp", "type": "timestamp", "nullable": True, "metadata": {"comment": "Kafka broker timestamp"}},
-        ]
-    }
+    warehouse_dir = WAREHOUSE_DIR.as_posix()
+    builder = (
+        SparkSession.builder.appName(app_name)
+        .master("local[*]")
+        .config("spark.driver.host", "127.0.0.1")
+        .config("spark.driver.bindAddress", "127.0.0.1")
+        .config("spark.sql.shuffle.partitions", "2")
+        .config("spark.ui.enabled", "false")
+        .config("spark.sql.warehouse.dir", warehouse_dir)
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+        .enableHiveSupport()
+    )
+    if os.name == "nt" and os.path.exists(r"C:\hadoop"):
+        builder = builder.config("spark.hadoop.home.dir", r"C:\hadoop")
 
-
-def get_quarantine_events_schema() -> Dict[str, Any]:
-    """
-    Returns canonical schema definition for Lakehouse Quarantine (DLQ) table.
-    """
-    return {
-        "fields": [
-            {"name": "event_id", "type": "string", "nullable": True, "metadata": {"comment": "Event ID if parsed"}},
-            {"name": "tmdb_id", "type": "long", "nullable": True, "metadata": {"comment": "Movie ID if present"}},
-            {"name": "validation_status", "type": "string", "nullable": False, "metadata": {"comment": "Status: QUARANTINE"}},
-            {"name": "rejection_reason", "type": "string", "nullable": False, "metadata": {"comment": "Violation rule code"}},
-            {"name": "corrupt_record_raw", "type": "string", "nullable": True, "metadata": {"comment": "Original unparseable JSON"}},
-            {"name": "event_date", "type": "date", "nullable": True, "metadata": {"comment": "Partition date"}},
-            {"name": "kafka_partition", "type": "integer", "nullable": True, "metadata": {"comment": "Source partition"}},
-            {"name": "kafka_offset", "type": "long", "nullable": True, "metadata": {"comment": "Source offset"}},
-            {"name": "kafka_timestamp", "type": "timestamp", "nullable": True, "metadata": {"comment": "Source timestamp"}},
-        ]
-    }
+    spark = configure_spark_with_delta_pip(builder).getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
+    return spark
 
 
 class LakehouseCatalogManager:
     """
-    Lakehouse Storage Catalog & Table Format Manager.
-    Configures and maintains Lakehouse tables (Delta Lake / Iceberg specification),
-    Write-Ahead Logging (WAL) transaction logs, schema evolution, and partition catalogs.
-    Compatible with Hive Metastore, Nessie, and AWS Glue catalog specifications.
+    Operational Delta Lake Table Catalog Manager.
+    Uses Spark's native DeltaCatalog to create, inspect, and query Delta Lake tables.
     """
 
-    def __init__(
-        self,
-        catalog_name: str = "movie_lakehouse",
-        catalog_type: str = DEFAULT_CATALOG_TYPE,
-        base_dir: Path = LAKEHOUSE_BASE_DIR,
-    ):
-        self.catalog_name = catalog_name
-        self.catalog_type = catalog_type
-        self.base_dir = Path(base_dir)
-        self.metadata_dir = self.base_dir / "_catalog_metadata"
-        self.metadata_dir.mkdir(parents=True, exist_ok=True)
-        self.catalog_file = self.metadata_dir / f"{self.catalog_name}_catalog.json"
-        self._initialize_catalog()
+    def __init__(self, spark: Optional[SparkSession] = None):
+        self._spark = spark
+        self.catalog_name = DATABASE_NAME
+        self.clean_path = CLEAN_EVENTS_TABLE_PATH
+        self.quarantine_path = QUARANTINE_EVENTS_TABLE_PATH
 
-    def _initialize_catalog(self):
-        """Initialize catalog registry if not already present."""
-        if not self.catalog_file.exists():
-            catalog_state = {
-                "catalog_name": self.catalog_name,
-                "catalog_type": self.catalog_type,
-                "version": "2.0.0",
-                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "endpoints": {
-                    "hive_metastore": HIVE_METASTORE_URI,
-                    "nessie": NESSIE_URI,
-                    "local_warehouse": str(WAREHOUSE_DIR),
-                },
-                "tables": {},
-            }
-            self._save_catalog(catalog_state)
+    @property
+    def spark(self) -> SparkSession:
+        if self._spark is None:
+            self._spark = get_catalog_spark_session()
+        return self._spark
 
-    def _load_catalog(self) -> Dict[str, Any]:
-        if not self.catalog_file.exists():
-            self._initialize_catalog()
-        with open(self.catalog_file, "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    def _save_catalog(self, data: Dict[str, Any]):
-        data["updated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        with open(self.catalog_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, default=str)
-
-    def register_table(
-        self,
-        table_name: str,
-        table_path: Path,
-        table_format: str,
-        partition_columns: List[str],
-        schema: Dict[str, Any],
-        description: str = "",
-    ) -> Dict[str, Any]:
+    def init_catalog(self):
         """
-        Register a Lakehouse table in the catalog registry.
+        Initializes database and registers Delta Lake tables in the catalog.
+        - staging_events: partitioned by event_date
+        - quarantine_events: partitioned by event_date (with rejection_reason preserved as column)
         """
-        table_path = Path(table_path)
-        wal_dir = table_path / "_delta_log"
-        wal_dir.mkdir(parents=True, exist_ok=True)
+        self.clean_path.mkdir(parents=True, exist_ok=True)
+        self.quarantine_path.mkdir(parents=True, exist_ok=True)
+        WAREHOUSE_DIR.mkdir(parents=True, exist_ok=True)
 
-        catalog = self._load_catalog()
-        table_entry = {
-            "table_name": table_name,
-            "full_name": f"{self.catalog_name}.{table_name}",
-            "location": str(table_path.resolve()),
-            "format": table_format,
-            "partition_columns": partition_columns,
-            "schema": schema,
-            "description": description,
-            "wal_directory": str(wal_dir.resolve()),
-            "registered_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "properties": {
-                "delta.appendOnly": "true",
-                "delta.autoOptimize.optimizeWrite": "true",
-                "delta.autoOptimize.autoCompact": "true",
-                "write.format.default": "parquet",
-            },
-        }
+        self.spark.sql(f"CREATE DATABASE IF NOT EXISTS {self.catalog_name}")
 
-        catalog["tables"][table_name] = table_entry
-        self._save_catalog(catalog)
-        return table_entry
-
-    def record_wal_commit(
-        self,
-        table_name: str,
-        files_added: List[Dict[str, Any]],
-        num_records: int,
-        batch_id: int,
-        operation: str = "STREAMING UPDATE",
-    ) -> Path:
+        staging_ddl = f"""
+        CREATE TABLE IF NOT EXISTS {self.catalog_name}.staging_events (
+            event_id STRING,
+            event_type STRING,
+            event_time TIMESTAMP,
+            event_date DATE,
+            event_hour INT,
+            user_id STRING,
+            session_id STRING,
+            device STRING,
+            country STRING,
+            tmdb_id BIGINT,
+            title STRING,
+            genres STRING,
+            popularity DOUBLE,
+            vote_average DOUBLE,
+            vote_count INT,
+            release_date STRING,
+            view_duration_seconds INT,
+            user_rating DOUBLE,
+            rating_bracket STRING,
+            engagement_score DOUBLE,
+            validation_status STRING,
+            rejection_reason STRING,
+            corrupt_record_raw STRING,
+            kafka_partition INT,
+            kafka_offset BIGINT,
+            kafka_timestamp TIMESTAMP
+        )
+        USING DELTA
+        PARTITIONED BY (event_date)
+        LOCATION '{self.clean_path.as_posix()}'
         """
-        Append an atomic Write-Ahead Log (WAL) commit to the Lakehouse transaction log.
-        Emulates Delta Lake / Iceberg transaction commit protocols.
+
+        quarantine_ddl = f"""
+        CREATE TABLE IF NOT EXISTS {self.catalog_name}.quarantine_events (
+            event_id STRING,
+            event_type STRING,
+            event_time TIMESTAMP,
+            event_date DATE,
+            event_hour INT,
+            user_id STRING,
+            session_id STRING,
+            device STRING,
+            country STRING,
+            tmdb_id BIGINT,
+            title STRING,
+            genres STRING,
+            popularity DOUBLE,
+            vote_average DOUBLE,
+            vote_count INT,
+            release_date STRING,
+            view_duration_seconds INT,
+            user_rating DOUBLE,
+            rating_bracket STRING,
+            engagement_score DOUBLE,
+            validation_status STRING,
+            rejection_reason STRING,
+            corrupt_record_raw STRING,
+            kafka_partition INT,
+            kafka_offset BIGINT,
+            kafka_timestamp TIMESTAMP
+        )
+        USING DELTA
+        PARTITIONED BY (event_date)
+        LOCATION '{self.quarantine_path.as_posix()}'
         """
-        catalog = self._load_catalog()
-        if table_name not in catalog["tables"]:
-            raise ValueError(f"Table '{table_name}' is not registered in catalog '{self.catalog_name}'")
 
-        table_info = catalog["tables"][table_name]
-        wal_dir = Path(table_info["wal_directory"])
-        wal_dir.mkdir(parents=True, exist_ok=True)
+        self.spark.sql(staging_ddl)
+        self.spark.sql(quarantine_ddl)
 
-        # Determine next commit version number
-        existing_commits = sorted(wal_dir.glob("*.json"))
-        version = len(existing_commits)
-        commit_filename = f"{version:020d}.json"
-        commit_file_path = wal_dir / commit_filename
+    def list_tables(self) -> List[str]:
+        """Returns list of registered table names in the catalog."""
+        tables_df = self.spark.sql(f"SHOW TABLES IN {self.catalog_name}")
+        return [row["tableName"] for row in tables_df.collect()]
 
-        now_utc = datetime.datetime.now(datetime.timezone.utc)
-        now_ts = int(now_utc.timestamp() * 1000)
+    def describe_table(self, table_name: str):
+        """Describes schema and extended metadata of a table."""
+        full_name = self._resolve_table_name(table_name)
+        return self.spark.sql(f"DESCRIBE TABLE EXTENDED {full_name}")
 
-        wal_payload = {
-            "commitInfo": {
-                "timestamp": now_ts,
-                "inCommitTimestamp": now_ts,
-                "userId": "streaming_engine",
-                "userName": "SparkStructuredStreaming",
-                "operation": operation,
-                "operationParameters": {
-                    "outputMode": "Append",
-                    "queryId": str(uuid.uuid4()),
-                    "epochId": str(batch_id),
-                },
-                "readVersion": version - 1 if version > 0 else None,
-                "isolationLevel": "Serializable",
-                "isBlindAppend": True,
-                "engineInfo": "PySpark/4.2.0 Lakehouse-Delta-Writer",
-                "txnId": str(uuid.uuid4()),
-            },
-            "protocol": {
-                "minReaderVersion": 1,
-                "minWriterVersion": 2,
-            },
-            "metaData": {
-                "id": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{self.catalog_name}.{table_name}")),
-                "format": {"provider": "parquet", "options": {}},
-                "schemaString": json.dumps(table_info["schema"]),
-                "partitionColumns": table_info["partition_columns"],
-                "configuration": table_info.get("properties", {}),
-                "createdTime": now_ts,
-            },
-            "add_actions": [
-                {
-                    "path": f.get("relative_path", str(f.get("path", ""))),
-                    "partitionValues": f.get("partitionValues", {}),
-                    "size": f.get("size_bytes", 0),
-                    "modificationTime": now_ts,
-                    "dataChange": True,
-                    "stats": json.dumps({
-                        "numRecords": f.get("records", num_records),
-                    }),
-                }
-                for f in files_added
-            ],
-            "commit_summary": {
-                "version": version,
-                "records_committed": num_records,
-                "files_count": len(files_added),
-                "timestamp_iso": now_utc.isoformat(),
-            },
-        }
-
-        with open(commit_file_path, "w", encoding="utf-8") as f:
-            json.dump(wal_payload, f, indent=2)
-
-        return commit_file_path
-
-    def get_table_history(self, table_name: str) -> List[Dict[str, Any]]:
+    def get_table_history(self, table_name: str):
         """
-        Read the Write-Ahead Log (WAL) audit trail for a table (equivalent to DESCRIBE HISTORY).
+        Executes genuine native Delta Lake DESCRIBE HISTORY command.
         """
-        catalog = self._load_catalog()
-        if table_name not in catalog["tables"]:
-            raise ValueError(f"Table '{table_name}' not registered in catalog")
-
-        table_info = catalog["tables"][table_name]
-        wal_dir = Path(table_info["wal_directory"])
-        commits = sorted(wal_dir.glob("*.json"))
-
-        history = []
-        for c in commits:
-            try:
-                with open(c, "r", encoding="utf-8") as f:
-                    entry = json.load(f)
-                    summary = entry.get("commit_summary", {})
-                    info = entry.get("commitInfo", {})
-                    history.append({
-                        "version": summary.get("version", int(c.stem)),
-                        "timestamp": summary.get("timestamp_iso", datetime.datetime.fromtimestamp(info.get("timestamp", 0) / 1000).isoformat()),
-                        "operation": info.get("operation", "UNKNOWN"),
-                        "records_added": summary.get("records_committed", 0),
-                        "files_added": summary.get("files_count", len(entry.get("add_actions", []))),
-                        "isolationLevel": info.get("isolationLevel", "Serializable"),
-                        "commit_file": c.name,
-                    })
-            except Exception as e:
-                history.append({"commit_file": c.name, "error": str(e)})
-
-        return history
+        full_name = self._resolve_table_name(table_name)
+        return self.spark.sql(f"DESCRIBE HISTORY {full_name}")
 
     def discover_partitions(self, table_name: str) -> List[str]:
         """
-        Discover active physical partitions for a Lakehouse table.
+        Discovers physical partition directories on disk.
         """
-        catalog = self._load_catalog()
-        if table_name not in catalog["tables"]:
+        target_path = self.clean_path if "staging" in table_name.lower() else self.quarantine_path
+        if not target_path.exists():
             return []
-
-        table_path = Path(catalog["tables"][table_name]["location"])
-        if not table_path.exists():
-            return []
-
         partitions = []
-        for item in table_path.iterdir():
-            if item.is_dir() and "=" in item.name and not item.name.startswith(("_", ".")):
-                partitions.append(item.name)
-        return sorted(partitions)
+        for p in sorted(target_path.glob("event_date=*")):
+            if p.is_dir():
+                file_count = len(list(p.glob("*.parquet")))
+                size_kb = sum(f.stat().st_size for f in p.glob("*.parquet")) / 1024
+                partitions.append(f"{p.name} ({file_count} files, {size_kb:.1f} KB)")
+        return partitions
 
     def generate_trino_schema_ddl(self) -> str:
         """
-        Generate Trino Lakehouse catalog and table DDL for downstream querying (Week 3/4 serving layer).
+        Generates standard Delta Lake Trino / Presto DDL for serving layer.
         """
-        catalog = self._load_catalog()
-        ddl_lines = [
-            f"-- Trino Serving Layer Catalog DDL for {self.catalog_name}",
-            f"CREATE SCHEMA IF NOT EXISTS delta.{self.catalog_name};",
-            "",
-        ]
+        return f"""-- ==============================================================================
+-- TRINO / PRESTO DELTA LAKE SERVING LAYER DDL SPECIFICATION
+-- Database: {self.catalog_name}
+-- ==============================================================================
 
-        type_mapping = {
-            "string": "VARCHAR",
-            "long": "BIGINT",
-            "integer": "INTEGER",
-            "double": "DOUBLE",
-            "timestamp": "TIMESTAMP(3)",
-            "date": "DATE",
-            "boolean": "BOOLEAN",
-        }
+CREATE SCHEMA IF NOT EXISTS delta.{self.catalog_name};
 
-        for tname, tinfo in catalog["tables"].items():
-            loc = tinfo["location"].replace("\\", "/")
-            fields = tinfo["schema"]["fields"]
-            cols = []
-            for f in fields:
-                tt = type_mapping.get(f["type"], "VARCHAR")
-                cols.append(f"    {f['name']} {tt}")
+CREATE TABLE IF NOT EXISTS delta.{self.catalog_name}.staging_events (
+    event_id VARCHAR,
+    event_type VARCHAR,
+    event_time TIMESTAMP,
+    event_date DATE,
+    event_hour INTEGER,
+    user_id VARCHAR,
+    session_id VARCHAR,
+    device VARCHAR,
+    country VARCHAR,
+    tmdb_id BIGINT,
+    title VARCHAR,
+    genres VARCHAR,
+    popularity DOUBLE,
+    vote_average DOUBLE,
+    vote_count INTEGER,
+    release_date VARCHAR,
+    view_duration_seconds INTEGER,
+    user_rating DOUBLE,
+    rating_bracket VARCHAR,
+    engagement_score DOUBLE,
+    validation_status VARCHAR,
+    rejection_reason VARCHAR,
+    corrupt_record_raw VARCHAR,
+    kafka_partition INTEGER,
+    kafka_offset BIGINT,
+    kafka_timestamp TIMESTAMP
+)
+WITH (
+    location = '{self.clean_path.as_posix()}',
+    partitioned_by = ARRAY['event_date']
+);
 
-            cols_str = ",\n".join(cols)
-            partition_props = ""
-            if tinfo.get("partition_columns"):
-                part_cols = ", ".join(f"'{c}'" for c in tinfo["partition_columns"])
-                partition_props = f",\n    partitioned_by = ARRAY[{part_cols}]"
+CREATE TABLE IF NOT EXISTS delta.{self.catalog_name}.quarantine_events (
+    event_id VARCHAR,
+    event_type VARCHAR,
+    event_time TIMESTAMP,
+    event_date DATE,
+    event_hour INTEGER,
+    user_id VARCHAR,
+    session_id VARCHAR,
+    device VARCHAR,
+    country VARCHAR,
+    tmdb_id BIGINT,
+    title VARCHAR,
+    genres VARCHAR,
+    popularity DOUBLE,
+    vote_average DOUBLE,
+    vote_count INTEGER,
+    release_date VARCHAR,
+    view_duration_seconds INTEGER,
+    user_rating DOUBLE,
+    rating_bracket VARCHAR,
+    engagement_score DOUBLE,
+    validation_status VARCHAR,
+    rejection_reason VARCHAR,
+    corrupt_record_raw VARCHAR,
+    kafka_partition INTEGER,
+    kafka_offset BIGINT,
+    kafka_timestamp TIMESTAMP
+)
+WITH (
+    location = '{self.quarantine_path.as_posix()}',
+    partitioned_by = ARRAY['event_date']
+);
+"""
 
-            ddl_lines.append(f"CREATE TABLE IF NOT EXISTS delta.{self.catalog_name}.{tname} (")
-            ddl_lines.append(cols_str)
-            ddl_lines.append(")")
-            ddl_lines.append("WITH (")
-            ddl_lines.append(f"    location = '{loc}'{partition_props}")
-            ddl_lines.append(");")
-            ddl_lines.append("")
+    def _resolve_table_name(self, name: str) -> str:
+        if "." in name:
+            return name
+        return f"{self.catalog_name}.{name}"
 
-        return "\n".join(ddl_lines)
+    def close(self):
+        if self._spark is not None:
+            self._spark.stop()
+            self._spark = None
 
 
-def configure_default_lakehouse_catalog() -> LakehouseCatalogManager:
-    """
-    Ensure the standard default Lakehouse tables (staging_events and quarantine)
-    are registered in the Lakehouse catalog with proper schema & partitioning.
-    """
-    manager = LakehouseCatalogManager("movie_lakehouse")
-
-    # 1. Clean Staging Events Table (Partitioned by event_date)
-    manager.register_table(
-        table_name="staging_events",
-        table_path=CLEAN_EVENTS_TABLE_PATH,
-        table_format="delta",
-        partition_columns=["event_date"],
-        schema=get_staging_events_schema(),
-        description="Clean, validated real-time movie streaming events partitioned by event_date with WAL",
-    )
-
-    # 2. Quarantine Dead-Letter Queue (Partitioned by rejection_reason)
-    manager.register_table(
-        table_name="quarantine_events",
-        table_path=QUARANTINE_EVENTS_TABLE_PATH,
-        table_format="delta",
-        partition_columns=["rejection_reason"],
-        schema=get_quarantine_events_schema(),
-        description="Quarantine Dead-Letter Queue (DLQ) for corrupt/invalid payloads with schema enforcement WAL",
-    )
-
-    return manager
+def configure_default_lakehouse_catalog(spark: Optional[SparkSession] = None) -> LakehouseCatalogManager:
+    """Helper to initialize and return the Lakehouse catalog manager."""
+    mgr = LakehouseCatalogManager(spark)
+    mgr.init_catalog()
+    return mgr
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Lakehouse Table Catalog Manager (Delta Lake / Iceberg)")
-    parser.add_argument("--init", action="store_true", help="Initialize and configure default catalog tables")
+    parser = argparse.ArgumentParser(description="Delta Lake Operational Table Catalog Manager")
+    parser.add_argument("--init", action="store_true", help="Initialize database and Delta tables in catalog")
     parser.add_argument("--list-tables", action="store_true", help="List registered catalog tables")
-    parser.add_argument("--describe", type=str, help="Describe table schema, partitions, and location")
-    parser.add_argument("--show", nargs="?", const="all", default=None, help="Query and display Lakehouse table records, statistics, and analytics (staging, quarantine, or all)")
-    parser.add_argument("--history", type=str, help="Display Write-Ahead Log (WAL) transaction history for a table")
-    parser.add_argument("--partitions", nargs="?", const="all", default=None, help="List discovered physical partition paths for a table (or all)")
+    parser.add_argument("--describe", type=str, help="Describe table schema, extended properties, and location")
+    parser.add_argument("--history", type=str, help="Display native Delta Lake transaction history (DESCRIBE HISTORY)")
+    parser.add_argument("--partitions", nargs="?", const="all", default=None, help="Discover physical partition folders")
     parser.add_argument("--export-trino", action="store_true", help="Export Trino DDL for Lakehouse serving layer")
+    parser.add_argument("--show", nargs="?", const="all", default=None, help="Display table data and metrics")
 
     args = parser.parse_args()
-    catalog_mgr = configure_default_lakehouse_catalog()
+    catalog_mgr = LakehouseCatalogManager()
+
+    if args.init:
+        catalog_mgr.init_catalog()
+        print("=" * 80)
+        print(" DELTA LAKE TABLE CATALOG INITIALIZED")
+        print(f" Database: {catalog_mgr.catalog_name}")
+        print(" Tables:   staging_events, quarantine_events")
+        print(" Provider: Delta Lake (org.apache.spark.sql.delta.catalog.DeltaCatalog)")
+        print("=" * 80)
+
+    if args.list_tables:
+        catalog_mgr.init_catalog()
+        tables = catalog_mgr.list_tables()
+        print("=" * 80)
+        print(f" REGISTERED TABLES IN CATALOG: {catalog_mgr.catalog_name}")
+        print("=" * 80)
+        for t in tables:
+            print(f"  |-- {catalog_mgr.catalog_name}.{t}")
+
+    if args.describe:
+        desc_df = catalog_mgr.describe_table(args.describe)
+        print("=" * 80)
+        print(f" EXTENDED TABLE SPECIFICATION: {args.describe}")
+        print("=" * 80)
+        desc_df.show(50, truncate=False)
+
+    if args.history:
+        try:
+            hist_df = catalog_mgr.get_table_history(args.history)
+            print("=" * 80)
+            print(f" DELTA LAKE TRANSACTION HISTORY (DESCRIBE HISTORY): {args.history}")
+            print("=" * 80)
+            hist_df.select("version", "timestamp", "operation", "operationParameters").show(20, truncate=False)
+        except Exception as e:
+            print(f"Error fetching Delta history for '{args.history}': {e}")
+
+    if args.partitions:
+        tables = ["staging_events", "quarantine_events"] if args.partitions in ["all", None] else [args.partitions]
+        for t in tables:
+            parts = catalog_mgr.discover_partitions(t)
+            print("=" * 80)
+            print(f" DISCOVERED PARTITIONS FOR: {t} ({len(parts)} partitions)")
+            print("=" * 80)
+            for p in parts:
+                print(f"  |-- {p}")
+
+    if args.export_trino:
+        print(catalog_mgr.generate_trino_schema_ddl())
 
     if args.show:
         try:
             from pipeline.show_lakehouse import display_staging_table, display_quarantine_table
             target = args.show.lower()
-            if target in ["staging", "staging_events", "movie_lakehouse.staging_events", "all"]:
+            if target in ["staging", "staging_events", "all"]:
                 display_staging_table(limit=10)
-            if target in ["quarantine", "quarantine_events", "movie_lakehouse.quarantine_events", "all"]:
+            if target in ["quarantine", "quarantine_events", "all"]:
                 display_quarantine_table(limit=10)
         except Exception as e:
             print(f"Error displaying lakehouse table: {e}")
 
-    if args.list_tables or args.init:
-        catalog = catalog_mgr._load_catalog()
-        print("=" * 80)
-        print(f" LAKEHOUSE TABLE CATALOG: {catalog['catalog_name']} ({catalog['catalog_type'].upper()})")
-        print(f" Catalog Location: {catalog_mgr.catalog_file}")
-        print("=" * 80)
-        for tname, tinfo in catalog["tables"].items():
-            print(f"\n Table: {tinfo['full_name']}")
-            print(f"   Format:             {tinfo['format']}")
-            print(f"   Location:           {tinfo['location']}")
-            print(f"   WAL Directory:      {tinfo['wal_directory']}")
-            print(f"   Partition Columns:  {tinfo['partition_columns']}")
-            print(f"   Description:        {tinfo['description']}")
-
-    if args.describe:
-        catalog = catalog_mgr._load_catalog()
-        if args.describe in catalog["tables"]:
-            tinfo = catalog["tables"][args.describe]
-            print("=" * 80)
-            print(f" SCHEMA SPECIFICATION FOR TABLE: {args.describe}")
-            print("=" * 80)
-            print(f"{'Field Name':<25} {'Type':<15} {'Nullable':<10} {'Description'}")
-            print("-" * 80)
-            for f in tinfo["schema"]["fields"]:
-                comment = f.get("metadata", {}).get("comment", "")
-                print(f"{f['name']:<25} {f['type']:<15} {str(f['nullable']):<10} {comment}")
-        else:
-            print(f"Table '{args.describe}' not found in catalog.")
-
-    if args.history:
-        try:
-            hist = catalog_mgr.get_table_history(args.history)
-            print("=" * 80)
-            print(f" WRITE-AHEAD LOG (WAL) COMMIT AUDIT HISTORY: {args.history}")
-            print("=" * 80)
-            print(f"{'Version':<10} {'Timestamp':<28} {'Operation':<22} {'Records':<10} {'Files'}")
-            print("-" * 80)
-            for h in hist:
-                print(f"{h.get('version', '-'):<10} {h.get('timestamp', '-'):<28} {h.get('operation', '-'):<22} {h.get('records_added', 0):<10} {h.get('files_added', 0)}")
-            print("=" * 80)
-        except Exception as e:
-            print(f"Error fetching history for '{args.history}': {e}")
-
-    if args.partitions:
-        catalog = catalog_mgr._load_catalog()
-        target = args.partitions
-        tables_to_check = []
-        if target in ["all", ""]:
-            tables_to_check = list(catalog["tables"].keys())
-        elif target in catalog["tables"]:
-            tables_to_check = [target]
-        else:
-            match = [k for k in catalog["tables"].keys() if target in k]
-            tables_to_check = match if match else [target]
-
-        for tname in tables_to_check:
-            try:
-                parts = catalog_mgr.discover_partitions(tname)
-                print("=" * 80)
-                print(f" DISCOVERED PARTITIONS FOR: {tname} ({len(parts)} partitions)")
-                print("=" * 80)
-                for p in parts:
-                    print(f"  |-- {p}")
-            except Exception as e:
-                print(f"Error discovering partitions for {tname}: {e}")
-
-    if args.export_trino:
-        print(catalog_mgr.generate_trino_schema_ddl())
+    catalog_mgr.close()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,59 @@
+{
+  "commitInfo": {
+    "timestamp": 1790673838015,
+    "inCommitTimestamp": 1790673838015,
+    "userId": "streaming_engine",
+    "userName": "SparkStructuredStreaming",
+    "operation": "STREAMING WRITE",
+    "operationParameters": {
+      "outputMode": "Append",
+      "queryId": "b06d2bbd-333e-487a-8d7c-ea21622f64dd",
+      "epochId": "0"
+    },
+    "readVersion": null,
+    "isolationLevel": "Serializable",
+    "isBlindAppend": true,
+    "engineInfo": "PySpark/4.2.0 Lakehouse-Delta-Writer",
+    "txnId": "903493b8-5ad5-4fb5-9d44-e1f23e762f22"
+  },
+  "protocol": {
+    "minReaderVersion": 1,
+    "minWriterVersion": 2
+  },
+  "metaData": {
+    "id": "89a15c19-796c-59ac-96d2-54abebb19123",
+    "format": {
+      "provider": "parquet",
+      "options": {}
+    },
+    "schemaString": "{\"fields\": [{\"name\": \"event_id\", \"type\": \"string\", \"nullable\": false, \"metadata\": {\"comment\": \"Unique event UUID\"}}, {\"name\": \"event_type\", \"type\": \"string\", \"nullable\": false, \"metadata\": {\"comment\": \"Stream event category\"}}, {\"name\": \"event_time\", \"type\": \"timestamp\", \"nullable\": false, \"metadata\": {\"comment\": \"Event generation timestamp\"}}, {\"name\": \"event_date\", \"type\": \"date\", \"nullable\": false, \"metadata\": {\"comment\": \"Partition key (YYYY-MM-DD)\"}}, {\"name\": \"event_hour\", \"type\": \"integer\", \"nullable\": true, \"metadata\": {\"comment\": \"Event hour (0-23)\"}}, {\"name\": \"user_id\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"User identifier\"}}, {\"name\": \"session_id\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"User session UUID\"}}, {\"name\": \"device\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Client device\"}}, {\"name\": \"country\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Country code (ISO 3166-1)\"}}, {\"name\": \"tmdb_id\", \"type\": \"long\", \"nullable\": false, \"metadata\": {\"comment\": \"TMDB movie reference ID\"}}, {\"name\": \"title\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Movie title\"}}, {\"name\": \"genres\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Comma-separated genres\"}}, {\"name\": \"popularity\", \"type\": \"double\", \"nullable\": true, \"metadata\": {\"comment\": \"Popularity metric\"}}, {\"name\": \"vote_average\", \"type\": \"double\", \"nullable\": true, \"metadata\": {\"comment\": \"Audience vote average (0-10)\"}}, {\"name\": \"vote_count\", \"type\": \"integer\", \"nullable\": true, \"metadata\": {\"comment\": \"Number of ratings\"}}, {\"name\": \"release_date\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Theatrical release date\"}}, {\"name\": \"view_duration_seconds\", \"type\": \"integer\", \"nullable\": true, \"metadata\": {\"comment\": \"Watch duration\"}}, {\"name\": \"user_rating\", \"type\": \"double\", \"nullable\": true, \"metadata\": {\"comment\": \"Individual rating score\"}}, {\"name\": \"rating_bracket\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Masterpiece/High/Medium/Low\"}}, {\"name\": \"engagement_score\", \"type\": \"double\", \"nullable\": true, \"metadata\": {\"comment\": \"Duration * Rating score\"}}, {\"name\": \"validation_status\", \"type\": \"string\", \"nullable\": false, \"metadata\": {\"comment\": \"Quality status: VALID\"}}, {\"name\": \"rejection_reason\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Validation rule verdict\"}}, {\"name\": \"corrupt_record_raw\", \"type\": \"string\", \"nullable\": true, \"metadata\": {\"comment\": \"Raw corrupt payload (if any)\"}}, {\"name\": \"kafka_partition\", \"type\": \"integer\", \"nullable\": true, \"metadata\": {\"comment\": \"Kafka source partition\"}}, {\"name\": \"kafka_offset\", \"type\": \"long\", \"nullable\": true, \"metadata\": {\"comment\": \"Kafka source offset\"}}, {\"name\": \"kafka_timestamp\", \"type\": \"timestamp\", \"nullable\": true, \"metadata\": {\"comment\": \"Kafka broker timestamp\"}}]}",
+    "partitionColumns": [
+      "event_date"
+    ],
+    "configuration": {
+      "delta.appendOnly": "true",
+      "delta.autoOptimize.optimizeWrite": "true",
+      "delta.autoOptimize.autoCompact": "true",
+      "write.format.default": "parquet"
+    },
+    "createdTime": 1790673838015
+  },
+  "add_actions": [
+    {
+      "path": "event_date=2026-09-29",
+      "partitionValues": {
+        "event_date": "2026-09-29"
+      },
+      "size": 0,
+      "modificationTime": 1790673838015,
+      "dataChange": true,
+      "stats": "{\"numRecords\": 534}"
+    }
+  ],
+  "commit_summary": {
+    "version": 0,
+    "records_committed": 534,
+    "files_count": 1,
+    "timestamp_iso": "2026-09-29T09:23:58.015607+00:00"
+  }
+}
