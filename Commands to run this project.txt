@@ -4,13 +4,15 @@ Commands to run this project;
 > cd airflow/
 > docker compose up -d
 > docker compose ps
-> Open http://localhost:8080 [Username: admin, Password: admin]
+> Open http://localhost:8080 [Username: admin, Password: admin] (Airflow Web UI)
+> Open http://localhost:8082 (Trino Web UI)
 > Trigger Dag pipelines
 
 
 For Week-1:
 > python pipeline/test_stream_pipeline.py
 > docker exec -it de-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic movie_pipeline --from-beginning
+
 
 For Week-2:
 > # 1. Initialize and inspect Lakehouse Catalog & Tables
@@ -33,7 +35,36 @@ For Week-2:
 > python pipeline/lakehouse_catalog.py --export-trino
 >
 > # 5. Run Automated End-to-End Week-2 Lakehouse Pipeline Verification Suite
-> python pipeline/test_lakehouse_pipeline.py
+> python tests/test_lakehouse_pipeline.py
 >
 > # 6. Trigger Week-2 Airflow Lakehouse Maintenance DAG (in Airflow Web UI: http://localhost:8080)
 > # DAG ID: lakehouse_catalog_maintenance
+
+
+For Week-3 (Trino & Power BI):
+> # 1. Verify Trino container is running (Port 8082)
+> docker ps | findstr de-trino
+>
+> # 2. Register Delta Lake tables in Trino and run verification queries
+> python pipeline/trino_client.py
+>
+> # 3. Export datasets for Power BI integration
+> python analytics/export_lakehouse_for_powerbi.py
+>
+> # 4. Build / Open Cat-2 Lakehouse Dashboard in Power BI Desktop
+> # Follow instructions in: analytics/power_bi_cat2_lakehouse_dashboard_guide.md
+> # Connect to Trino: Server: localhost:8082, Catalog: delta, Schema: movie_lakehouse
+
+
+For Week-4 (Airflow Delta Optimization & Benchmarking):
+> # 1. Run Delta Lake Table Compaction (OPTIMIZE) and Safe Vacuum (168h retention)
+> python pipeline/lakehouse_optimizer.py --table all
+>
+> # 2. Run Trino Query Performance Benchmark (Before vs After Optimization)
+> python analytics/benchmark_trino_queries.py
+>
+> # 3. View benchmark report
+> # Report file: analytics/reports/week4_optimization_benchmark.md
+>
+> # 4. Trigger Week-4 Airflow Delta Optimization DAG (in Airflow Web UI: http://localhost:8080)
+> # DAG ID: lakehouse_delta_optimization

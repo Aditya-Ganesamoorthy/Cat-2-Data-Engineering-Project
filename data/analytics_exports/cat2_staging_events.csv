@@ -1,0 +1,49 @@
+event_id,event_type,event_date,event_hour,user_id,device,country,tmdb_id,title,genres,popularity,vote_average,vote_count,view_duration_seconds,user_rating,rating_bracket,engagement_score,validation_status
+cc238b8a-7bc3-4e6d-8291-38da227218e2,movie_view,2026-10-13,23,user_13,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+b812957d-831a-4212-b39d-20d4fd5f29bf,movie_view,2026-10-13,23,user_14,web,US,238,The Godfather,"Drama, Crime",110.0,9.2,1000,120,9.2,Masterpiece,18.4,VALID
+1d8849e7-a0b8-415c-bd92-2327e4deb961,movie_view,2026-10-13,23,user_18,web,US,238,The Godfather,"Drama, Crime",110.0,9.2,1000,120,9.2,Masterpiece,18.4,VALID
+0ebcdd45-5108-498b-b150-b007a4ea843d,movie_view,2026-10-13,23,user_23,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+119fc8eb-f3ec-430a-8bdf-ecd82853f960,movie_view,2026-10-13,23,user_24,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+ed292b23-3a20-4bfe-bee9-aa3fd2f0ffab,movie_view,2026-10-13,23,user_28,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+513cc7a4-be90-4f80-ad91-db7e8c5490b5,movie_view,2026-10-13,23,user_4,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+326c894b-31da-4679-bac5-ed3436ac3f31,movie_view,2026-10-14,0,user_3,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+f818c6cc-d8bf-47d7-a65e-1d67c2e375be,movie_view,2026-10-13,23,user_19,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+725643fa-9b8e-4e3b-90e4-2181fe2b2ad4,movie_view,2026-10-13,23,user_3,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+d52dd372-0e07-4774-a077-f391758c8337,movie_view,2026-10-13,23,user_8,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+c628709d-5d39-4771-b8a7-6b3dd2f348b7,movie_view,2026-10-13,23,user_9,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+51a02c72-a217-498c-8735-1ee97a4b8c83,movie_view,2026-10-13,23,user_29,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+d7aee2ef-cd07-492f-b24e-e1ada4490158,movie_view,2026-10-13,23,user_14,web,US,238,The Godfather,"Drama, Crime",110.0,9.2,1000,120,9.2,Masterpiece,18.4,VALID
+5a8c2f09-f602-4bf9-b3ee-dd6134cd4c26,movie_view,2026-10-13,23,user_24,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+6a260d5d-f832-450d-870d-d0370cd201cb,movie_view,2026-10-13,23,user_3,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+1c4c5833-f79e-4da9-b7c1-b0750cff62e7,movie_view,2026-10-14,0,user_9,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+e90afeef-56ae-4632-9f8c-dff0cfb4446b,movie_view,2026-10-14,0,user_14,web,US,238,The Godfather,"Drama, Crime",110.0,9.2,1000,120,9.2,Masterpiece,18.4,VALID
+bcfe3687-90dd-4d65-a880-bdba629ee820,movie_view,2026-10-14,0,user_24,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+adacf057-af60-433a-83ac-ba749fb2e9af,movie_view,2026-10-14,0,user_28,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+77041f28-9683-4552-9bc7-238b6ebe3910,movie_view,2026-10-14,0,user_8,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+bac40776-9777-4211-9ef4-55abb593eedc,movie_view,2026-10-14,0,user_13,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+66ac8f42-45b2-418f-8b6d-87a765ab79b3,movie_view,2026-10-13,23,user_4,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+d6656e60-f45d-4b0a-8398-12addf107748,movie_view,2026-10-13,23,user_9,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+52c4c3f4-ac55-41f3-8401-86186d84f158,movie_view,2026-10-13,23,user_13,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+653b2676-5208-4201-9010-505d63a0a7af,movie_view,2026-10-13,23,user_18,web,US,238,The Godfather,"Drama, Crime",110.0,9.2,1000,120,9.2,Masterpiece,18.4,VALID
+91f2d798-e42e-4e03-bfca-a64ff4fdf93f,movie_view,2026-10-13,23,user_19,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+926ce1e6-8dcc-4797-8a3d-ecebe485b36c,movie_view,2026-10-13,23,user_29,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+6223ca73-954f-41fd-80de-9774d338526e,movie_view,2026-10-13,23,user_8,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+336a3786-fd15-4f82-8fff-6577fbbb5008,movie_view,2026-10-13,23,user_23,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+59934aa4-6693-4e83-8cac-f57ec36d9665,movie_view,2026-10-13,23,user_28,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+4da0fec7-59e1-4c0e-a2d5-221e8dca6a5c,movie_view,2026-10-13,23,user_18,web,US,238,The Godfather,"Drama, Crime",110.0,9.2,1000,120,9.2,Masterpiece,18.4,VALID
+7a8a24b4-878a-434f-abe6-18eff895ada5,movie_view,2026-10-13,23,user_28,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+5a5b44b0-1b16-40d7-ac20-f2d95acb52e2,movie_view,2026-10-13,23,user_4,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+dc0d5024-0c2f-466b-9376-1ee245c8d4f7,movie_view,2026-10-13,23,user_9,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+af0d7e0b-e989-491d-9a93-01a4a804cc3a,movie_view,2026-10-13,23,user_23,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+b7b8e1f6-3b26-408c-ae14-02c36bafc909,movie_view,2026-10-13,23,user_24,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+ddf678ea-9bed-4b12-b3cb-aee7afc12a2d,movie_view,2026-10-13,23,user_29,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+47281cb2-555a-479b-aa42-a6981991dc93,movie_view,2026-10-13,23,user_3,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+e8c6dee9-c19c-469a-a691-e296dca7da32,movie_view,2026-10-13,23,user_8,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+b06450c4-5ee8-40b6-99e8-dd969e2fb2f3,movie_view,2026-10-13,23,user_13,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+c9b57fe5-39f3-4860-aaa5-fd5f5a0d7309,movie_view,2026-10-13,23,user_14,web,US,238,The Godfather,"Drama, Crime",110.0,9.2,1000,120,9.2,Masterpiece,18.4,VALID
+774a77f6-5c66-484d-92c7-b88639aecf1c,movie_view,2026-10-13,23,user_19,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+0056b7b4-9be3-45b5-b139-c4b73745fbba,movie_view,2026-10-14,0,user_18,web,US,238,The Godfather,"Drama, Crime",110.0,9.2,1000,120,9.2,Masterpiece,18.4,VALID
+ad481c00-1a5c-4640-8ee7-47d711416902,movie_view,2026-10-14,0,user_29,web,US,278,The Shawshank Redemption,"Drama, Crime",140.2,9.3,1000,120,9.3,Masterpiece,18.6,VALID
+05967aa7-3a93-4ac8-a138-27af9086b8bc,movie_view,2026-10-14,0,user_4,web,US,155,The Dark Knight,"Drama, Crime",120.5,9.0,1000,120,9.0,Masterpiece,18.0,VALID
+820805c9-4dca-47e8-8f6e-6f46a8a7a22d,movie_view,2026-10-14,0,user_19,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID
+89c10d15-f2f1-4ef7-90f8-ef5dada6a6aa,movie_view,2026-10-14,0,user_23,web,US,680,Pulp Fiction,"Drama, Crime",95.3,8.9,1000,120,8.9,Masterpiece,17.8,VALID

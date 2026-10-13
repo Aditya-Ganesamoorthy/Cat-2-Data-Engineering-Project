@@ -102,5 +102,17 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
+  trino:
+    image: trinodb/trino:435
+    container_name: de-trino
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    volumes:
+      - ../trino/etc/catalog:/etc/trino/catalog:ro
+      - ../data/lakehouse:/data/lakehouse
+      - trino-metastore-data:/data/trino_metastore
+
 volumes:
   airflow-postgres-data:
+  trino-metastore-data:

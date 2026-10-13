@@ -1,0 +1,73 @@
+event_id,event_type,event_date,rejection_reason,tmdb_id,title,vote_average,corrupt_record_raw
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""82273cb7-115e-41ab-8639-384771184d1a"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+2f2f7bfa-a9df-4b0f-9ac6-d8b963ac8ef9,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+e7c24dff-a60b-42bc-bb13-0772d792879e,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+46987f81-0bad-44a9-9dc8-db72b10fde6e,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+b67f986f-51cc-4a13-b5ff-edafc8c4d6d9,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""7bec43ec-a2a8-432e-b4a1-8e62c0ec4b04"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+c1688f07-5157-47e2-9557-1cbce5562e77,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+6203e89e-d0af-4dfd-8b8f-22e0ee0aae76,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+23872cf1-6289-4a4b-9584-31edbd819b9a,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+1e52eff5-83fa-4707-90fd-c765fd7bc0a0,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""0e91786e-474d-4350-9144-0855d290dcec"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+8a3a7abf-6c41-4554-b64b-5c09754d7d26,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""206879a4-b4ba-4329-9188-fa7dae222e1a"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+ff1fa42e-171c-424c-ae21-78ae95d78fd8,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""a9207028-fd63-4187-928a-eba804f67b9b"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""b740ee8d-205f-4b1f-9645-ce5f12abe7f7"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+cf3ed49f-b72a-456b-ba4d-a6f08562611a,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+ee98ea54-e04a-4b4d-b59d-08c1eb5d772b,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+83c3b1f1-ec65-40d4-822e-5c74b5989e6e,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""01d56d41-6cf0-4afe-8eff-88f92e6e9db8"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""47f9fbf0-68b4-4441-beb9-4f833e1d1ba9"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+1d0de1ee-a007-4462-84eb-b8d4f9cf3de3,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""fce97545-75a0-46ba-8b60-16a974e4479e"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""e9a34559-b4f5-4065-b090-a7f4c5dc339a"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+a87cff3e-0e9b-4d2d-8529-a1a1e485e2b0,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+a7edcef5-0925-4d43-bfcf-2b1368571c72,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""72e1eff9-1819-441c-811b-1e902752338a"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+c401a257-d7a6-4a3b-926b-7e9f7fff1cb0,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+89746ec0-e8e7-4d2b-a5db-3345dae9b57f,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+1d2180ec-2956-44ae-b0d5-c73af0c914f3,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+c353990f-b804-4abb-b9ac-794ecc20ba06,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+b95b04ba-115b-44d7-90d5-cc705b641fab,rating_submitted,2026-10-14,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+6fa1d0e3-af87-403c-a0d4-fadbc3f61778,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+05f5f6d1-a9dc-4b24-893c-0f6dbe2da183,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+cf84d788-6196-45cd-8073-15a3ebc7ce88,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+92212fbb-13ec-438e-8d6e-b3ad4c07d20f,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""2a7dcdb9-8e18-4b5c-9a4f-4f58b5542102"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""bb41d886-a049-4ef6-babd-4880a9075342"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""f32b2fe2-09d2-41e9-a571-cc8fc214bb64"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+1be0d942-b50e-4485-83e4-93b503cf61ca,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+541d96f3-1789-45b5-aa60-946c792c3f0b,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+ab0cf730-b7f3-4e47-9ddb-097444a75a79,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+dc52f435-c498-4692-b29d-15a0b953a612,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+aed2807d-2256-4498-b116-43409fb29632,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+641820aa-266f-4a3c-ba98-3e0ade01d22b,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""9954d0e2-a023-4d0f-8613-533cad126249"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+6c5603aa-4936-485b-8e81-26b858ed7579,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+4117b579-d62f-4555-bc79-18bba468958d,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+c7fc4a95-ca6e-4947-a5c7-9fda19b73770,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+19af3bd9-0ff3-4317-85e9-681bc0fe8863,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+1fd5be7c-dee3-4288-9d07-a65a1bcea290,rating_submitted,2026-10-13,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+3353dbf4-5873-4d7d-baff-29874e53000b,movie_view,2026-10-13,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""fc7af250-b557-48da-9dde-9ec45a0ec7df"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""f160e46a-4d5a-4318-87c1-48bcc99a2e7c"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-13,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""1d1e4cee-af8b-44aa-97e9-1440557624b4"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+36c63900-8390-4a04-b816-0ddc70ff59c0,movie_view,2026-10-14,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+ae4a894d-15e9-464b-850a-4526a8a79a7e,rating_submitted,2026-10-14,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+51b3fd4d-f6cc-4295-bb15-59a62c946856,rating_submitted,2026-10-14,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+d2241be5-26b6-4c81-886c-b1ba22d576e5,movie_view,2026-10-14,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+2c9f10f8-b141-4c1a-b580-15fba785b062,rating_submitted,2026-10-14,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+1fe45ee4-9c9f-4026-a202-4456dc9ab721,movie_view,2026-10-14,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+0ae265e2-1f0d-411f-8cae-8761f6adcad0,rating_submitted,2026-10-14,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+5f54b828-a7c6-4e8b-b2a9-08c8c067f96d,movie_view,2026-10-14,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-14,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""34e76375-148f-40f8-a875-4a6cb7c94d49"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+c546411c-1254-4c14-86a9-12e6acbc408b,rating_submitted,2026-10-14,VOTE_AVERAGE_OUT_OF_BOUNDS_0_10,155.0,Invalid Vote Movie,14.5,
+,,2026-10-14,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""e7ccef36-04ba-4aba-970f-a2c59d75fb5e"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-14,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""e326dc09-77f6-4ae0-8674-9aa45d2154a6"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+95b72221-104c-4edd-a839-437974aa4326,movie_view,2026-10-14,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-14,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""5b144968-650a-42d9-a285-690d2ea8b55f"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+,,2026-10-14,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""41b04c26-b29d-4a06-ac49-b71660d452ac"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
+34814692-a11c-4eaf-bc42-c23525da4e8b,movie_view,2026-10-14,MISSING_OR_INVALID_TMDB_ID,,No TMDB ID Movie,7.0,
+,,2026-10-14,CORRUPT_JSON_SYNTAX,,,,"{""event_id"": ""b05174b9-55e9-4c91-9c88-5e3322c08889"", ""event_type"": ""corrupt"", ""malformed_json: missing_quotes"
