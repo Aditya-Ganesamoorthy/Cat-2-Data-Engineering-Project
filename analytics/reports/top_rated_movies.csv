@@ -4,6 +4,7 @@ tmdb_id,title,vote_average,vote_count,popularity,release_date
 980431,Avatar Aang: The Last Airbender,9.276,816,150.8228,2026-07-24
 1560520,Batman: Knightfall Part 1: Knightfall,9.16,399,58.6763,2026-06-23
 1391021,Once Upon a Time in the Middle East,9.0,9,33.427,2026-08-08
+1669915,Angel and the Badman,9.0,1,35.3003,2026-10-08
 1632181,Accidental Partners,8.9,347,24.3217,2026-03-12
 1007757,Swapped,8.886,2091,61.0028,2026-05-01
 1621552,Facing El Chapo,8.798,843,75.282,2026-08-21
@@ -18,4 +19,3 @@ tmdb_id,title,vote_average,vote_count,popularity,release_date
 129,Spirited Away,8.534,18670,35.7355,2001-07-20
 155,The Dark Knight,8.534,36353,62.631,2008-07-16
 1218925,Chainsaw Man - The Movie: Reze Arc,8.518,1100,35.8703,2025-09-19
-122,The Lord of the Rings: The Return of the King,8.503,27057,53.3391,2003-12-17
